@@ -1,0 +1,537 @@
+[
+  {
+    "id": "concord",
+    "name": "Day 1 — Concord",
+    "subtitle": "Capital City Sweep",
+    "markers": [
+      184,
+      105,
+      128,
+      66,
+      175,
+      147,
+      148,
+      110,
+      80,
+      125,
+      238,
+      236,
+      67
+    ]
+  },
+  {
+    "id": "monadnock-west",
+    "name": "Day 2 — Monadnock West",
+    "subtitle": "Keene • Connecticut River • Southwest Loop",
+    "markers": [
+      69,
+      226,
+      232,
+      216,
+      93,
+      168,
+      52,
+      27,
+      61,
+      74,
+      60,
+      95,
+      204,
+      112,
+      59,
+      99,
+      22,
+      86
+    ]
+  },
+  {
+    "id": "monadnock-east",
+    "name": "Day 3 — Monadnock East",
+    "subtitle": "Peterborough • Jaffrey • New Ipswich Loop",
+    "markers": [
+      153,
+      178,
+      228,
+      43,
+      23,
+      130,
+      206,
+      210,
+      12,
+      10,
+      137,
+      101,
+      68,
+      138,
+      13
+    ]
+  },
+  {
+    "id": "manchester",
+    "name": "Day 4 — Manchester & Merrimack",
+    "subtitle": "Hooksett • Manchester • Bedford • Merrimack",
+    "markers": [
+      132,
+      225,
+      208,
+      124,
+      102,
+      29,
+      79
+    ]
+  },
+  {
+    "id": "derry-salem",
+    "name": "Day 5 — Derry, Londonderry & Salem",
+    "subtitle": "Chester • Derry • Londonderry • Salem",
+    "markers": [
+      14,
+      139,
+      48,
+      58,
+      266,
+      166,
+      72,
+      221,
+      253
+    ]
+  },
+  {
+    "id": "nashua-milford",
+    "name": "Day 6 — Nashua & Milford Loop",
+    "subtitle": "New Boston • Weare • Amherst • Milford • Brookline • Hollis • Nashua",
+    "markers": [
+      143,
+      192,
+      146,
+      3,
+      133,
+      268,
+      271,
+      260,
+      267
+    ]
+  },
+  {
+    "id": "seacoast-south",
+    "name": "Day 7 — Seacoast South",
+    "subtitle": "Seabrook • Hampton • North Hampton • Rye • New Castle",
+    "markers": [
+      103,
+      119,
+      120,
+      62,
+      63,
+      18,
+      78,
+      4
+    ]
+  },
+  {
+    "id": "portsmouth",
+    "name": "Day 8 — Portsmouth Sweep",
+    "subtitle": "Portsmouth • Greenland • Newington",
+    "markers": [
+      127,
+      194,
+      75,
+      114,
+      234,
+      286,
+      113,
+      151
+    ]
+  },
+  {
+    "id": "exeter-durham",
+    "name": "Day 9 — Exeter to Durham",
+    "subtitle": "Exeter • Newfields • Newmarket • Durham",
+    "markers": [
+      97,
+      161,
+      240,
+      131,
+      272,
+      290,
+      209,
+      154,
+      89,
+      8
+    ]
+  },
+  {
+    "id": "dover-north",
+    "name": "Day 10 — Dover & North Seacoast",
+    "subtitle": "Dover • Rollinsford • Somersworth",
+    "markers": [
+      165,
+      264,
+      289,
+      282,
+      51,
+      88,
+      287,
+      280
+    ]
+  },
+  {
+    "id": "lakes-south",
+    "name": "Day 11 — Southern Lakes",
+    "subtitle": "Barnstead • Gilmanton • Belmont • Laconia • Gilford",
+    "markers": [
+      201,
+      17,
+      235,
+      135,
+      172,
+      118,
+      239
+    ]
+  },
+  {
+    "id": "winnipesaukee-east",
+    "name": "Day 12 — Winnipesaukee East",
+    "subtitle": "Alton • New Durham • Wolfeboro • Tuftonboro",
+    "markers": [
+      164,
+      288,
+      222,
+      53,
+      116,
+      242,
+      276,
+      285
+    ]
+  },
+  {
+    "id": "squam-sandwich",
+    "name": "Day 13 — Squam & Sandwich",
+    "subtitle": "Holderness • Ashland • Center Harbor • Sandwich",
+    "markers": [
+      39,
+      100,
+      163,
+      7,
+      82,
+      248
+    ]
+  },
+  {
+    "id": "tamworth-ossipee",
+    "name": "Day 14 — Tamworth & Ossipee Gateway",
+    "subtitle": "Tamworth • Madison • Effingham",
+    "markers": [
+      90,
+      155,
+      207,
+      83
+    ]
+  },
+  {
+    "id": "sunapee-south",
+    "name": "Day 15 — Sunapee South",
+    "subtitle": "Warner • Bradford • Newbury • Newport • Goshen • Lempster",
+    "markers": [
+      243,
+      108,
+      81,
+      6,
+      106,
+      140,
+      182
+    ]
+  },
+  {
+    "id": "claremont-cornish",
+    "name": "Day 16 — Claremont & Cornish",
+    "subtitle": "Charlestown • Claremont • Cornish • Plainfield",
+    "markers": [
+      2,
+      117,
+      177,
+      41,
+      76,
+      134,
+      158,
+      265,
+      16,
+      77
+    ]
+  },
+  {
+    "id": "upper-valley-core",
+    "name": "Day 17 — Upper Valley Core",
+    "subtitle": "Hanover • Enfield • Canaan • Orford",
+    "markers": [
+      261,
+      202,
+      241,
+      21,
+      246,
+      33
+    ]
+  },
+  {
+    "id": "white-south",
+    "name": "Day 18 — Southern White Mountains",
+    "subtitle": "Campton • Lincoln • Franconia • Sugar Hill • Easton",
+    "markers": [
+      196,
+      224,
+      9,
+      263,
+      73,
+      200
+    ]
+  },
+  {
+    "id": "white-west",
+    "name": "Day 19 — Littleton & Lancaster",
+    "subtitle": "Littleton • Lisbon • Bethlehem • Lancaster • Jefferson",
+    "markers": [
+      71,
+      185,
+      70,
+      198,
+      218,
+      257,
+      84,
+      173,
+      219,
+      19,
+      152,
+      229
+    ]
+  },
+  {
+    "id": "crawford-notch",
+    "name": "Day 20 — Crawford Notch",
+    "subtitle": "Carroll • Bretton Woods • Hart's Location",
+    "markers": [
+      30,
+      87,
+      122,
+      233,
+      274,
+      45,
+      186,
+      213
+    ]
+  },
+  {
+    "id": "conway-notch",
+    "name": "Day 21 — Conway & Pinkham Notch",
+    "subtitle": "Bartlett • Conway • Pinkham's Grant",
+    "markers": [
+      109,
+      38,
+      11
+    ]
+  },
+  {
+    "id": "berlin-milan",
+    "name": "Day 22 — Berlin & Milan",
+    "subtitle": "Berlin • Milan • Stark",
+    "markers": [
+      159,
+      215,
+      254,
+      255,
+      227,
+      284,
+      150
+    ]
+  },
+  {
+    "id": "far-north",
+    "name": "Day 23 — Far North",
+    "subtitle": "Stratford • Dixville • Stewartstown • Clarksville • Pittsburg",
+    "markers": [
+      34,
+      171,
+      64,
+      115,
+      1
+    ]
+  },
+  {
+    "id": "capital-catchup",
+    "name": "Day 24 — Capital Region Catch-Up",
+    "subtitle": "Boscawen • Canterbury • Loudon • Pembroke • Allenstown • Hopkinton",
+    "markers": [
+      49,
+      256,
+      283,
+      15,
+      144,
+      187,
+      250,
+      193,
+      205,
+      211,
+      230,
+      195
+    ]
+  },
+  {
+    "id": "route4-catchup",
+    "name": "Day 25 — Route 4 & Lakes Gateway",
+    "subtitle": "Franklin • Tilton • Hill • Plymouth • Rumney • Hebron",
+    "markers": [
+      91,
+      129,
+      149,
+      162,
+      179,
+      189,
+      174,
+      223
+    ]
+  },
+  {
+    "id": "haverhill-northwest",
+    "name": "Day 26 — Haverhill & Northwest",
+    "subtitle": "Bath • Haverhill • Grafton • Warren",
+    "markers": [
+      121,
+      217,
+      56,
+      104,
+      136,
+      160,
+      190,
+      251,
+      252,
+      231
+    ]
+  },
+  {
+    "id": "hillsborough-catchup",
+    "name": "Day 27 — Hillsborough County Catch-Up",
+    "subtitle": "Hillsborough • Washington • Mason • Peterborough",
+    "markers": [
+      65,
+      107,
+      203,
+      94,
+      35,
+      244,
+      270
+    ]
+  },
+  {
+    "id": "route125-catchup",
+    "name": "Day 28 — Route 125 & Rockingham",
+    "subtitle": "Sandown • Hampstead • Kingston • Fremont • Danville • Brentwood",
+    "markers": [
+      26,
+      247,
+      46,
+      142,
+      156,
+      157,
+      167,
+      170,
+      277,
+      169,
+      258,
+      180,
+      249
+    ]
+  },
+  {
+    "id": "deerfield-northwood",
+    "name": "Day 29 — Deerfield & Northwood",
+    "subtitle": "Candia • Deerfield • Northwood • Nottingham • Epsom • Pittsfield",
+    "markers": [
+      141,
+      237,
+      25,
+      145,
+      183,
+      214,
+      24,
+      181,
+      259,
+      199,
+      197
+    ]
+  },
+  {
+    "id": "rochester-catchup",
+    "name": "Day 30 — Rochester & Inland Seacoast",
+    "subtitle": "Barrington • Rochester • Strafford • Farmington",
+    "markers": [
+      96,
+      212,
+      279,
+      42,
+      191,
+      291,
+      98
+    ]
+  },
+  {
+    "id": "ossipee-wakefield",
+    "name": "Day 31 — Ossipee & Wakefield",
+    "subtitle": "Tamworth • Ossipee • Wakefield",
+    "markers": [
+      31,
+      20,
+      5,
+      123
+    ]
+  },
+  {
+    "id": "claremont-extra",
+    "name": "Day 32 — Claremont Extra",
+    "subtitle": "Claremont completion stop",
+    "markers": [
+      188
+    ]
+  },
+  {
+    "id": "hampton-extra",
+    "name": "Day 33 — Hampton Extra",
+    "subtitle": "Hampton completion stop",
+    "markers": [
+      28
+    ]
+  },
+  {
+    "id": "randolph-extra",
+    "name": "Day 34 — Randolph Scenic Stop",
+    "subtitle": "Randolph",
+    "markers": [
+      220
+    ]
+  },
+  {
+    "id": "pelham-extra",
+    "name": "Day 35 — Pelham Stop",
+    "subtitle": "Pelham",
+    "markers": [
+      176
+    ]
+  },
+  {
+    "id": "statewide-cleanup",
+    "name": "Day 36 — Statewide Cleanup",
+    "subtitle": "Remaining active markers not yet assigned to a regional loop",
+    "markers": [
+      32,
+      37,
+      40,
+      44,
+      50,
+      54,
+      111,
+      245,
+      262,
+      269,
+      273,
+      275,
+      281
+    ]
+  }
+]
