@@ -48,10 +48,22 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 .officialTitle{font-size:12px;color:var(--muted);margin-top:3px}
 .roadMiles{font-size:12px;color:var(--muted);margin-top:3px}
 .routeSummary{background:#f3f6f2;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+
+#stateMap{width:100%;height:auto;background:#f5f7f3;border-radius:14px}
+.townBoundaryImage{opacity:.38}
+.mapHit{fill:transparent;cursor:pointer}
+.pinVisited{fill:#2f6b4c;stroke:#fff;stroke-width:1.2}
+.pinUnvisited{fill:#fff;stroke:#68736d;stroke-width:2}
+.pinNotFound{fill:#b65f36;stroke:#fff;stroke-width:1.2}
+.pinUnavailable{fill:#c49a3a;stroke:#fff;stroke-width:1.2}
+.pinSymbol{fill:#fff;font-size:7px;font-weight:900;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.pinUnvisitedDot{fill:#68736d;pointer-events:none}
+.mapSelected{stroke:#111!important;stroke-width:2.5!important}
+.mapSource{font-size:11px;color:var(--muted);margin-top:7px}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Road Miles + Custom Names • v17.4</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Real NH Map • v17.5</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
@@ -67,18 +79,19 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 <section id="map" class="view">
   <div class="card">
     <h2>Interactive Marker Map</h2>
-    <p class="muted">All official markers are shown: visited, unvisited, and unavailable. Tap any pin for details.</p>
+    <p class="muted">All official markers are shown on the real New Hampshire outline with faint municipal boundaries. Tap any pin for details and your saved selfie.</p>
     <div class="chips">
-      <span class="chip">● Unvisited</span>
-      <span class="chip">✓ Visited</span>
-      <span class="chip">✕ Site checked — marker not found</span>
-      <span class="chip">⚠ Unavailable/retired</span>
+      <span class="chip">○ Unvisited</span>
+      <span class="chip">●✓ Visited</span>
+      <span class="chip">●✕ Checked — not found</span>
+      <span class="chip">▲ Unavailable/retired</span>
     </div>
+    <div class="mapSource">Town/state boundaries: NH DOT / NH GRANIT boundary service.</div>
   </div>
   <div class="card" style="padding:8px;overflow:hidden">
-    <svg id="stateMap" viewBox="0 0 360 620" role="img" aria-label="New Hampshire historical marker map" style="width:100%;height:auto;background:#eef3ed;border-radius:14px">
-      <path d="M137 18 L220 22 L232 95 L254 136 L250 190 L275 254 L261 316 L291 375 L272 432 L301 492 L286 585 L107 591 L96 529 L79 482 L89 414 L72 358 L88 296 L79 244 L102 187 L101 128 L123 82 Z"
-        fill="#f7f2e7" stroke="#7d8d83" stroke-width="2"/>
+    <svg id="stateMap" viewBox="0 0 360 620" role="img" aria-label="New Hampshire historical marker map">
+      <rect x="0" y="0" width="360" height="620" fill="#f5f7f3"/>
+      <image class="townBoundaryImage" href="https://maps.dot.nh.gov/arcgis_server/rest/services/Boundaries/NHDOT_BOUNDARIES_Towns/MapServer/export?bbox=-72.60,42.68,-70.55,45.31&bboxSR=4326&imageSR=4326&size=720,1240&layers=show:3,4&format=png32&transparent=true&f=image" x="0" y="0" width="360" height="620" preserveAspectRatio="none"/>
       <g id="mapPins"></g>
     </svg>
   </div>
@@ -152,7 +165,7 @@ function updateStats(){renderMap();
 
 function projectNH(lat,lon){
   const minLat=42.68,maxLat=45.31,minLon=-72.60,maxLon=-70.55;
-  return {x:45+(lon-minLon)/(maxLon-minLon)*270,y:590-(lat-minLat)/(maxLat-minLat)*560};
+  return {x:(lon-minLon)/(maxLon-minLon)*360,y:620-(lat-minLat)/(maxLat-minLat)*620};
 }
 function renderMap(){
   const g=document.getElementById("mapPins"); if(!g) return;
@@ -163,19 +176,53 @@ function renderMap(){
     const unavailable=m.status!=="installed";
     const visited=!!state.markers[m.num]?.done;
     const notfound=!!state.markers[m.num]?.notFound;
-    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("cx",p.x); c.setAttribute("cy",p.y);
-    c.setAttribute("r",unavailable?3.8:notfound?3.8:visited?3.6:2.9);
-    c.setAttribute("class","mapPin "+(unavailable?"unavailable":notfound?"notfound":visited?"visited":"unvisited"));
-    c.setAttribute("data-marker",m.num);
-    c.setAttribute("aria-label",`Marker ${m.num}: ${m.name}`);
-    c.addEventListener("click",()=>showMapMarker(m));
-    g.appendChild(c);
+
+    const group=document.createElementNS("http://www.w3.org/2000/svg","g");
+    group.setAttribute("data-marker",m.num);
+
+    if(unavailable){
+      const tri=document.createElementNS("http://www.w3.org/2000/svg","path");
+      tri.setAttribute("d",`M ${p.x} ${p.y-5.5} L ${p.x+5.2} ${p.y+4.2} L ${p.x-5.2} ${p.y+4.2} Z`);
+      tri.setAttribute("class","pinUnavailable");
+      group.appendChild(tri);
+      const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x",p.x);t.setAttribute("y",p.y+1);t.setAttribute("class","pinSymbol");t.textContent="!";
+      group.appendChild(t);
+    }else if(notfound){
+      const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",4.8);c.setAttribute("class","pinNotFound");
+      group.appendChild(c);
+      const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x",p.x);t.setAttribute("y",p.y+.2);t.setAttribute("class","pinSymbol");t.textContent="×";
+      group.appendChild(t);
+    }else if(visited){
+      const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",4.8);c.setAttribute("class","pinVisited");
+      group.appendChild(c);
+      const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x",p.x);t.setAttribute("y",p.y+.3);t.setAttribute("class","pinSymbol");t.textContent="✓";
+      group.appendChild(t);
+    }else{
+      const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",4.2);c.setAttribute("class","pinUnvisited");
+      group.appendChild(c);
+      const d=document.createElementNS("http://www.w3.org/2000/svg","circle");
+      d.setAttribute("cx",p.x);d.setAttribute("cy",p.y);d.setAttribute("r",1.2);d.setAttribute("class","pinUnvisitedDot");
+      group.appendChild(d);
+    }
+
+    const hit=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    hit.setAttribute("cx",p.x);hit.setAttribute("cy",p.y);hit.setAttribute("r",8);hit.setAttribute("class","mapHit");
+    hit.setAttribute("aria-label",`Marker ${m.num}: ${displayName(m)}`);
+    hit.addEventListener("click",()=>showMapMarker(m));
+    group.appendChild(hit);
+    g.appendChild(group);
   });
 }
 async function showMapMarker(m){
-  document.querySelectorAll(".mapPin").forEach(p=>p.classList.remove("selected"));
-  document.querySelector(`.mapPin[data-marker="${m.num}"]`)?.classList.add("selected");
+  document.querySelectorAll(".pinVisited,.pinUnvisited,.pinNotFound,.pinUnavailable").forEach(p=>p.classList.remove("mapSelected"));
+  const selected=document.querySelector(`#mapPins g[data-marker="${m.num}"] .pinVisited, #mapPins g[data-marker="${m.num}"] .pinUnvisited, #mapPins g[data-marker="${m.num}"] .pinNotFound, #mapPins g[data-marker="${m.num}"] .pinUnavailable`);
+  selected?.classList.add("mapSelected");
   const box=document.getElementById("mapInfo"),s=state.markers[m.num]||{};
   box.innerHTML=`<h3>#${m.num} — ${displayName(m)}</h3>${officialNameNote(m)}
     <p class="muted">${m.town}, New Hampshire</p>
