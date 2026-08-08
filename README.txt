@@ -1,21 +1,30 @@
-NH Historical Marker Passport v14 — Interactive Statewide Map
+NH Historical Marker Passport v15 — Near Me
 
 NEW
-- Statewide interactive marker map tab.
-- Map uses the official NH DHR GPS coordinates stored in markers.json.
-- Visited, unvisited, and unavailable markers display differently.
-- Tap a pin to see official title, town, written location, status, Apple Maps button, and passport shortcut.
-- Every existing trip was reordered using nearest-neighbor geometry over the official GPS coordinates to reduce obvious backtracking.
-- Trip cards now show approximate pin-to-pin mileage.
+- "Near Me" tab for iPhone/browser geolocation.
+- Finds the 12 closest installed markers using the official NH DHR GPS coordinates.
+- Default view excludes markers you already completed.
+- Optional "Include Visited" mode.
+- Straight-line distance estimate displayed for each nearby marker.
+- One-tap Apple Maps navigation.
+- One-tap jump to the marker's passport record.
+- Quick "Mark visited" button.
+- Home screen now includes a Find Nearby Markers shortcut.
 
-IMPORTANT ROUTING NOTE
-The route optimizer uses straight-line distance between official marker GPS pins.
-It does NOT know current road closures, turn restrictions, traffic, seasonal roads, parking,
-or actual travel time. Apple Maps remains the final navigation authority.
+PRIVACY
+The app does not send your current location to a server.
+Browser geolocation is used locally in JavaScript to calculate distance to the official marker coordinates.
 
-DATA QUALITY
-- Official DHR source data remains unchanged from v13.
-- Marker #281 retains the official malformed west-coordinate warning and falls back to written-location navigation.
-- Existing checkoffs, selfies, notes, favorites, and scores remain compatible.
+IPHONE
+When you first tap Use My Location, Safari may ask for permission.
+Choose Allow. If denied previously, adjust the website/Safari Location setting in iOS and retry.
 
-Upload all files from this ZIP to the root of the existing GitHub repository and replace older files.
+ROUTING
+Displayed nearby mileage is straight-line distance, not driving mileage.
+Apple Maps remains the source for actual road directions and drive time.
+
+DATA
+Official marker inventory remains the NH DHR dataset imported in v13.
+Marker #281 continues to use written-location fallback because the official PDF has a malformed west coordinate.
+
+Upload all files from the ZIP to the root of the existing GitHub repository and replace older files.

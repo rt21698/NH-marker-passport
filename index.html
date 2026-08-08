@@ -22,16 +22,33 @@ input[type=date],input[type=number],select,textarea{width:100%;font:inherit;bord
 .mapPin{cursor:pointer;stroke:#fff;stroke-width:1.2}
 .mapPin.visited{fill:#2f6b4c}.mapPin.unvisited{fill:#6d7771}.mapPin.unavailable{fill:#c49a3a}
 .mapPin:hover{stroke-width:2}
+
+.nearCard{background:#fff;border:1px solid var(--line);border-radius:17px;margin-bottom:10px;padding:14px}
+.nearTop{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.distance{font-size:22px;font-weight:850;white-space:nowrap;color:var(--pine)}
 </style></head><body>
 <header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Statewide Audit • v10</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>loaded</span></div><div class="stat"><b id="tripN">36</b><span>trips</span></div></div><div class="track"><div class="bar" id="bar"></div></div></div></header>
-<nav style="grid-template-columns:repeat(6,1fr)"><button class="tab active" data-v="home">Home</button><button class="tab" data-v="map">Map</button><button class="tab" data-v="trips">Trips</button><button class="tab" data-v="planner">Planner</button><button class="tab" data-v="passport">Passport</button><button class="tab" data-v="race">Race</button></nav>
+<nav style="grid-template-columns:repeat(7,1fr)"><button class="tab active" data-v="home">Home</button><button class="tab" data-v="nearby">Near Me</button><button class="tab" data-v="map">Map</button><button class="tab" data-v="trips">Trips</button><button class="tab" data-v="planner">Planner</button><button class="tab" data-v="passport">Passport</button><button class="tab" data-v="race">Race</button></nav>
 <main class="wrap">
-<section id="home" class="view active"><div class="card"><h2>Continue Adventure</h2><p id="nextText" class="muted"></p><div class="btnrow"><a id="nextBtn" class="btn">Apple Maps</a><button id="chooseTrip" class="secondary">Choose trip</button></div></div>
+<section id="home" class="view active"><div class="card"><h2>Continue Adventure</h2><p id="nextText" class="muted"></p><div class="btnrow"><a id="nextBtn" class="btn">Apple Maps</a><button id="chooseTrip" class="secondary">Choose trip</button><button type="button" class="gold" onclick="view('nearby')">Find nearby markers</button></div></div>
 <div class="card"><h3>Statewide database complete</h3><div class="big">36 day trips</div><p class="muted">All marker numbers 1–291 are now represented in the passport, with retired and unavailable markers separated from active competition totals.</p><div id="homeProgress"></div></div>
 <div class="notice"><strong>Audit complete:</strong> retired and temporarily unavailable markers stay searchable but do not count toward active completion totals.</div></section>
 
 
+
+<section id="nearby" class="view">
+  <div class="card">
+    <h2>Markers Near Me</h2>
+    <p class="muted">Use your iPhone location to find the nearest installed markers you have not checked off yet.</p>
+    <div class="btnrow">
+      <button id="findNearby" type="button">Use My Location</button>
+      <button id="findNearbyAll" type="button" class="secondary">Include Visited</button>
+    </div>
+    <p id="nearStatus" class="muted" style="margin-top:10px">Location is only used in your browser to calculate nearby markers.</p>
+  </div>
+  <div id="nearResults"></div>
+</section>
 <section id="map" class="view">
   <div class="card">
     <h2>Statewide Marker Map</h2>
@@ -72,7 +89,10 @@ async function getP(n){const d=await db(),tx=d.transaction("photos","readonly");
 async function putP(n,f){const d=await db(),tx=d.transaction("photos","readwrite");tx.objectStore("photos").put(f,String(n));return new Promise(r=>tx.oncomplete=r)}
 async function delP(n){const d=await db(),tx=d.transaction("photos","readwrite");tx.objectStore("photos").delete(String(n))}
 function view(id){document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.v===id));scrollTo({top:0,behavior:"smooth"})}
-document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>view(b.dataset.v)));document.getElementById("chooseTrip").addEventListener("click",()=>view("trips"));
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>view(b.dataset.v)));
+document.getElementById("findNearby")?.addEventListener("click",()=>locateAndShow(false));
+document.getElementById("findNearbyAll")?.addEventListener("click",()=>locateAndShow(true));
+document.getElementById("chooseTrip").addEventListener("click",()=>view("trips"));
 
 const tc=document.getElementById("tripCards");
 T.forEach(t=>{const ms=t.markers.map(n=>byNum[n]).filter(Boolean);const c=document.createElement("div");c.className="trip";c.innerHTML=`<h2>${t.name}</h2><p class="muted">${t.subtitle}</p><div class="chips"><span class="chip">📍 ${ms.length} stops</span><span class="chip progress" data-trip="${t.id}"></span><span class="chip">🧭 Apple Maps</span>${t.estimated_straight_line_miles?`<span class="chip">≈ ${t.estimated_straight_line_miles} mi pin-to-pin</span>`:""}</div><div class="routes"></div><div class="btnrow"><a class="btn" href="${url(ms[0])}">Start trip</a></div>`;ms.forEach((m,i)=>{const r=document.createElement("div");r.className="route";r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${m.name}</b><div class="muted">${m.town}</div></div><a class="btn secondary" style="padding:8px" href="${url(m)}">Go</a>`;c.querySelector(".routes").appendChild(r)});tc.appendChild(c)});
@@ -87,6 +107,68 @@ const groups={"capital":["concord","capital-catchup"],"monadnock":["monadnock-we
 document.getElementById("recommend").addEventListener("click",()=>{const h=+document.getElementById("hours").value,a=document.getElementById("area").value;let cand=T.filter(t=>a==="any"||groups[a]?.includes(t.id));cand=cand.filter(t=>!t.markers.every(n=>state.markers[n]?.done));let pick;if(h<=2)pick=cand.slice().sort((x,y)=>x.markers.length-y.markers.length)[0];else if(h>=8)pick=cand.slice().sort((x,y)=>y.markers.length-x.markers.length)[0];else pick=cand[Math.floor(cand.length/2)]||cand[0];const box=document.getElementById("recommendation");if(!pick){box.innerHTML='<div class="card"><h3>Nice!</h3><p>You have completed every loaded trip in that area.</p></div>';return}let rem=pick.markers.filter(n=>!state.markers[n]?.done);box.innerHTML=`<div class="card"><h3>${pick.name}</h3><p class="muted">${pick.subtitle}</p><div class="big">${rem.length} left</div><div class="btnrow"><a class="btn" href="${url(byNum[rem[0]])}">Start remaining route</a></div></div>`});
 
 document.getElementById("ours").value=state.score.ours||0;document.getElementById("theirs").value=state.score.theirs||0;document.getElementById("ours").addEventListener("change",e=>{state.score.ours=+e.target.value||0;save()});document.getElementById("theirs").addEventListener("change",e=>{state.score.theirs=+e.target.value||0;save()});
+
+
+function milesBetween(lat1,lon1,lat2,lon2){
+  const R=3958.7613,toRad=x=>x*Math.PI/180;
+  const dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+function usableMarker(m){
+  return m.status==="installed" &&
+    Number.isFinite(m.lat)&&Number.isFinite(m.lon) &&
+    m.lat>=42&&m.lat<=46&&m.lon>=-73&&m.lon<=-70;
+}
+function locateAndShow(includeVisited=false){
+  const status=document.getElementById("nearStatus");
+  const out=document.getElementById("nearResults");
+  if(!navigator.geolocation){
+    status.textContent="This browser does not support location access.";
+    return;
+  }
+  status.textContent="Getting your location…";
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const lat=pos.coords.latitude,lon=pos.coords.longitude;
+      const ranked=M.filter(usableMarker)
+        .filter(m=>includeVisited || !state.markers[m.num]?.done)
+        .map(m=>({...m,distance:milesBetween(lat,lon,m.lat,m.lon)}))
+        .sort((a,b)=>a.distance-b.distance)
+        .slice(0,12);
+      status.textContent=`Showing the ${ranked.length} closest ${includeVisited?"installed":"unvisited"} markers. Distances are straight-line estimates; Apple Maps gives the actual drive.`;
+      out.innerHTML=ranked.map((m,i)=>{
+        const visited=!!state.markers[m.num]?.done;
+        return `<div class="nearCard">
+          <div class="nearTop">
+            <div><div class="muted">#${m.num} • ${m.town}, NH ${visited?"• ✓ visited":""}</div><h3 style="margin-top:4px">${m.name}</h3></div>
+            <div class="distance">${m.distance.toFixed(m.distance<10?1:0)} mi</div>
+          </div>
+          <p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p>
+          <div class="btnrow">
+            <a class="btn" href="${url(m)}">Apple Maps</a>
+            <button type="button" class="secondary" onclick="openMarkerFromMap(${m.num})">Open passport</button>
+            ${!visited?`<button type="button" class="outline" onclick="markNearbyDone(${m.num})">Mark visited</button>`:""}
+          </div>
+        </div>`;
+      }).join("");
+    },
+    err=>{
+      const msgs={
+        1:"Location permission was not allowed. On iPhone, enable location for Safari/this website and try again.",
+        2:"Your location could not be determined right now.",
+        3:"Location request timed out. Try again."
+      };
+      status.textContent=msgs[err.code]||"Could not get your location.";
+    },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:300000}
+  );
+}
+function markNearbyDone(num){
+  state.markers[num]={...(state.markers[num]||{}),done:true};
+  save();
+  locateAndShow(false);
+}
 
 function projectNH(lat,lon){
   // Project NH bounds approximately into our stylized SVG.
