@@ -1,0 +1,15 @@
+NH Historical Marker Passport v13 - Official Source Audit
+
+Primary sources:
+- highway-markers-by-number.pdf (NH Division of Historical Resources, dated 2025-02-19)
+- highway-markers-by-town.pdf (NH Division of Historical Resources, dated 2025-02-19)
+
+Marker records parsed: 291
+Marker number coverage: 0001-0291 with no gaps
+Status counts: INSTALLED=282, OUT FOR REPAIR=4, REMOVED FOR CONSTRUCTION=1, RETIRED=4
+Cross-PDF GPS/status discrepancies detected: 0
+
+Known official-data anomaly:
+#0281 THE BROKEN 1713 TREATY OF PORTSMOUTH - both official PDFs publish GpsWest as +43.06094585,
+which is outside New Hampshire. The app preserves the published value, flags it, and uses the official written
+location for Apple Maps instead of silently inventing a corrected longitude.

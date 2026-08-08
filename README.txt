@@ -1,28 +1,40 @@
-NH Historical Marker Passport v12 — FULL TITLE VERIFICATION
+NH Historical Marker Passport v13 - OFFICIAL NH DHR DATABASE REBUILD
 
-COMPLETED
-- 291 / 291 marker records now have named titles.
-- Removed all remaining “Historical Marker #___” placeholders.
-- Corrected a number of provisional/incorrect titles from earlier prototype versions.
-- Retired, repair, and construction statuses are preserved.
-- Existing progress, notes, favorites, scores, and selfie storage are preserved.
+SOURCE OF TRUTH
+This version rebuilds all 291 marker records directly from the two uploaded
+New Hampshire Division of Historical Resources inventory PDFs dated February 19, 2025:
+- highway-markers-by-number.pdf
+- highway-markers-by-town.pdf
 
-CURRENT DATA QUALITY
-- Titles: 291 / 291 named
-- Exact GPS records currently stored: 31 / 291
-- Placeholder titles remaining: 0
+OFFICIAL FIELDS NOW STORED FOR ALL 291 MARKERS
+- marker number
+- official inventory title
+- town
+- written roadside location
+- official status
+- GPS north / west coordinates
+- source metadata
 
-NEXT DATA PASS
-- Verify and populate exact latitude/longitude coordinates.
-- Use coordinates to power a real statewide interactive map.
-- Re-optimize trip stop orders mathematically from the verified pins.
+QUALITY CHECKS
+- 291 / 291 marker numbers parsed with no gaps.
+- Both PDFs were cross-checked for GPS and status agreement.
+- 290 / 291 published coordinate pairs pass a New Hampshire geographic sanity check.
+- #281 has a malformed positive GpsWest value in BOTH official PDFs. The value is preserved
+  as published and flagged; Apple Maps falls back to the official written location for that marker.
+- County is left blank because these inventory PDFs do not provide county.
+- Full inscription text is left blank because these inventory PDFs provide inventory titles/locations,
+  not the full historical marker inscription.
 
-FILES
-Upload all seven files to the root of the existing GitHub repository and replace older files:
-index.html
-markers.json
-trips.json
-manifest.json
-icon.svg
-service-worker.js
-README.txt
+OFFICIAL STATUS COUNTS
+- INSTALLED: 282
+- OUT FOR REPAIR: 4
+- REMOVED FOR CONSTRUCTION: 1
+- RETIRED: 4
+
+APP CHANGES
+- Marker cards now show the official roadside location.
+- Apple Maps uses official GPS coordinates when valid.
+- Invalid official coordinates use the official written location instead.
+- Previous checkoffs, selfies, notes, favorites, and competition scores remain compatible.
+
+UPLOAD ALL FILES FROM THIS ZIP TO THE ROOT OF YOUR EXISTING GITHUB REPOSITORY.
