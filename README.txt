@@ -1,22 +1,15 @@
-NH Historical Marker Passport — Version 2
+NH Historical Marker Passport v3
 
-Upload these files to the ROOT of your existing GitHub repository and replace the older versions when prompted.
+Upload all files to the ROOT of the existing GitHub repository, replacing existing files.
 
-Files:
-index.html
-manifest.json
-icon.svg
-service-worker.js
+NEW:
+- 3 usable day trips
+- Concord + Monadnock West + Monadnock East
+- 45 unique loaded markers (one Keene marker is shared as an East-loop start anchor)
+- exact lat/lon Apple Maps driving destinations
+- searchable passport
+- shared completion status across routes
+- preserves v2 progress by keeping the same localStorage key
+- selfie storage continues in the same IndexedDB database
 
-New in v2:
-- Home / Trips / Passport / Competition tabs
-- Continue Adventure button
-- Concord trip route
-- Take/Choose Selfie button
-- Favorites
-- Achievements
-- In-laws scoreboard
-- Offline shell caching
-- Better iPhone home-screen layout
-
-Important: photo copies and progress are local to the browser/device. Keep originals in Photos.
+Route orders are coordinate-optimized approximations. Apple Maps controls real road navigation.
