@@ -60,10 +60,13 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 .pinUnvisitedDot{fill:#68736d;pointer-events:none}
 .mapSelected{stroke:#111!important;stroke-width:2.5!important}
 .mapSource{font-size:11px;color:var(--muted);margin-top:7px}
+
+#stateMap{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+#stateMap.dragging{cursor:grabbing}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Aligned NH Map • v17.7</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Zoomable Map • v17.8</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
@@ -87,6 +90,14 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
       <span class="chip">▲ Unavailable/retired</span>
     </div>
     <div class="mapSource">Town/state boundaries: NH DOT / NH GRANIT. Pins use the same geographic extent as the boundary map, so their positions align with the NH outline.</div>
+  </div>
+  <div class="card">
+    <div class="btnrow" style="margin-top:0">
+      <button id="zoomIn" type="button">＋ Zoom In</button>
+      <button id="zoomOut" type="button" class="secondary">− Zoom Out</button>
+      <button id="zoomReset" type="button" class="outline">Reset Map</button>
+    </div>
+    <p class="muted" style="margin:10px 0 0">You can also pinch to zoom and drag the map with one finger.</p>
   </div>
   <div class="card" style="padding:8px;overflow:hidden">
     <svg id="stateMap" viewBox="0 0 360 462" role="img" aria-label="New Hampshire historical marker map">
@@ -162,6 +173,106 @@ function updateStats(){renderMap();
  const diff=(state.score.ours||0)-(state.score.theirs||0);document.getElementById("lead").textContent=diff>0?`You lead by ${diff}`:diff<0?`In-laws lead by ${Math.abs(diff)}`:"Tied";
 }
 
+
+
+const MAP_BASE={x:0,y:0,w:360,h:462};
+let mapView={...MAP_BASE};
+let mapDrag=null;
+let pinchStart=null;
+
+function applyMapView(){
+  const svg=document.getElementById("stateMap");
+  if(!svg)return;
+  svg.setAttribute("viewBox",`${mapView.x} ${mapView.y} ${mapView.w} ${mapView.h}`);
+}
+function clampMapView(){
+  mapView.w=Math.max(70,Math.min(MAP_BASE.w,mapView.w));
+  mapView.h=mapView.w*(MAP_BASE.h/MAP_BASE.w);
+  mapView.x=Math.max(MAP_BASE.x,Math.min(MAP_BASE.x+MAP_BASE.w-mapView.w,mapView.x));
+  mapView.y=Math.max(MAP_BASE.y,Math.min(MAP_BASE.y+MAP_BASE.h-mapView.h,mapView.y));
+}
+function zoomMap(factor,cx=null,cy=null){
+  const svg=document.getElementById("stateMap"); if(!svg)return;
+  if(cx===null){cx=mapView.x+mapView.w/2;cy=mapView.y+mapView.h/2}
+  const nw=mapView.w/factor,nh=mapView.h/factor;
+  const rx=(cx-mapView.x)/mapView.w,ry=(cy-mapView.y)/mapView.h;
+  mapView.x=cx-rx*nw;mapView.y=cy-ry*nh;mapView.w=nw;mapView.h=nh;
+  clampMapView();applyMapView();
+}
+function resetMap(){
+  mapView={...MAP_BASE};applyMapView();
+}
+function svgPoint(clientX,clientY){
+  const svg=document.getElementById("stateMap"),r=svg.getBoundingClientRect();
+  return {
+    x:mapView.x+(clientX-r.left)/r.width*mapView.w,
+    y:mapView.y+(clientY-r.top)/r.height*mapView.h
+  };
+}
+function setupMapGestures(){
+  const svg=document.getElementById("stateMap");if(!svg)return;
+  applyMapView();
+
+  document.getElementById("zoomIn")?.addEventListener("click",()=>zoomMap(1.6));
+  document.getElementById("zoomOut")?.addEventListener("click",()=>zoomMap(1/1.6));
+  document.getElementById("zoomReset")?.addEventListener("click",resetMap);
+
+  svg.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="touch")return;
+    svg.setPointerCapture(e.pointerId);
+    mapDrag={id:e.pointerId,startX:e.clientX,startY:e.clientY,origX:mapView.x,origY:mapView.y};
+    svg.classList.add("dragging");
+  });
+  svg.addEventListener("pointermove",e=>{
+    if(!mapDrag||e.pointerId!==mapDrag.id)return;
+    const r=svg.getBoundingClientRect();
+    mapView.x=mapDrag.origX-(e.clientX-mapDrag.startX)/r.width*mapView.w;
+    mapView.y=mapDrag.origY-(e.clientY-mapDrag.startY)/r.height*mapView.h;
+    clampMapView();applyMapView();
+  });
+  const endDrag=e=>{if(mapDrag&&e.pointerId===mapDrag.id){mapDrag=null;svg.classList.remove("dragging")}};
+  svg.addEventListener("pointerup",endDrag);svg.addEventListener("pointercancel",endDrag);
+
+  svg.addEventListener("touchstart",e=>{
+    if(e.touches.length===1){
+      const t=e.touches[0];
+      mapDrag={touch:true,startX:t.clientX,startY:t.clientY,origX:mapView.x,origY:mapView.y};
+    }else if(e.touches.length===2){
+      mapDrag=null;
+      const a=e.touches[0],b=e.touches[1];
+      const dx=b.clientX-a.clientX,dy=b.clientY-a.clientY;
+      const mid=svgPoint((a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2);
+      pinchStart={dist:Math.hypot(dx,dy),view:{...mapView},mid};
+    }
+  },{passive:false});
+
+  svg.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    if(e.touches.length===1&&mapDrag?.touch){
+      const t=e.touches[0],r=svg.getBoundingClientRect();
+      mapView.x=mapDrag.origX-(t.clientX-mapDrag.startX)/r.width*mapView.w;
+      mapView.y=mapDrag.origY-(t.clientY-mapDrag.startY)/r.height*mapView.h;
+      clampMapView();applyMapView();
+    }else if(e.touches.length===2&&pinchStart){
+      const a=e.touches[0],b=e.touches[1],dist=Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
+      const factor=Math.max(.35,Math.min(4,dist/pinchStart.dist));
+      mapView={...pinchStart.view};
+      const nw=mapView.w/factor,nh=mapView.h/factor;
+      const rx=(pinchStart.mid.x-mapView.x)/mapView.w,ry=(pinchStart.mid.y-mapView.y)/mapView.h;
+      mapView.x=pinchStart.mid.x-rx*nw;mapView.y=pinchStart.mid.y-ry*nh;mapView.w=nw;mapView.h=nh;
+      clampMapView();applyMapView();
+    }
+  },{passive:false});
+
+  svg.addEventListener("touchend",e=>{
+    if(e.touches.length<2)pinchStart=null;
+    if(e.touches.length===0)mapDrag=null;
+  });
+
+  svg.addEventListener("dblclick",e=>{
+    const p=svgPoint(e.clientX,e.clientY);zoomMap(1.7,p.x,p.y);
+  });
+}
 
 function projectNH(lat,lon){
   const minLat=42.68,maxLat=45.31,minLon=-72.60,maxLon=-70.55;
@@ -394,7 +505,7 @@ async function init(){
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-   renderPassport();renderTrips();renderMap();updateStats();
+   renderPassport();renderTrips();renderMap();setupMapGestures();updateStats();
 
    document.getElementById("search").addEventListener("input",e=>{
      const q=e.target.value.toLowerCase().trim();

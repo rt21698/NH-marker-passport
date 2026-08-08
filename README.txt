@@ -1,22 +1,27 @@
-NH Historical Marker Passport v17.7 — MAP ALIGNMENT FIX
+NH Historical Marker Passport v17.8 — ZOOMABLE MAP
 
-WHAT WAS WRONG
-The NH DOT map image requested in v17.5/v17.6 was 720 x 1240 pixels, but the requested
-longitude/latitude bounding box has a very different aspect ratio. ArcGIS adjusted the
-display extent to fit that tall image. The marker projection still used the original
-bbox, which is why many southern markers appeared below New Hampshire.
+NEW MAP CONTROLS
+- Pinch with two fingers to zoom in/out on iPhone.
+- Drag with one finger to pan around the map.
+- Zoom In button.
+- Zoom Out button.
+- Reset Map button.
+- Double-click/double-tap style zoom support where the browser provides it.
+- Zoom is constrained to the NH map extent so you cannot lose the state entirely.
 
-FIX
-- NH DOT boundary image is now requested at 720 x 924, matching the geographic bbox ratio.
-- SVG map is 360 x 462 with the same ratio.
-- Marker projection uses exactly the same bbox and dimensions as the boundary image.
-- Coordinates outside the NH extent are not drawn as valid map pins.
+WHY
+Dense marker clusters in the Seacoast, Manchester, Concord, and southern NH were too difficult to tap at the full-state scale.
 
-DATA CHECK
-Found 1 malformed/out-of-state coordinate record(s) in the current marker data:
-- #281 THE BROKEN 1713 TREATY OF PORTSMOUTH: lat 43.06094585, lon 43.06094585
-
-All other v17.6 features remain.
+RETAINED
+- Correctly aligned NH border and town boundaries
+- Distinct visited/unvisited/not-found/unavailable pin styles
+- Saved selfie in map detail card
+- Custom marker names
+- Road mileage calculations
+- Exact Apple Maps pins
+- Condensed 29 trips
+- Not Found tracking
+- Near Me and Adventure Mode
 
 Keep service-worker.js deleted.
 Upload:
