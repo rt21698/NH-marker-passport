@@ -1,19 +1,28 @@
-NH Historical Marker Passport v9 — North Country Expansion
+NH Historical Marker Passport v10 — STATEWIDE AUDIT
 
-NEW:
-- 23 total day trips
-- Day 22 Berlin & Milan
-- Day 23 Far North
-- Adds Pittsburg, Stewartstown, Clarksville, Dixville Notch, Stratford,
-  Stark, Berlin, and Milan marker clusters
-- #47 Metallak is retained in the searchable passport as OUT FOR REPAIR
-  but omitted from the active Far North route
-- Exact coordinates are used for several northern markers where verified
-- North Country added to Quick Trip Planner
-- Existing progress and selfie storage are preserved
+DATABASE
+- Marker numbers 1 through 291 are represented.
+- 4 retired markers are preserved but disabled: #36, #55, #85, #278.
+- Previously known out-for-repair/construction statuses remain preserved.
+- Active competition totals exclude non-installed markers.
 
-NEXT:
-A statewide completeness audit against the current official community/number
-index to catch missing central/eastern towns and retired/repair statuses.
+ROUTES
+- 36 total trip groupings.
+- Added catch-up routes for previously scattered towns:
+  Capital Region
+  Route 4 / Lakes Gateway
+  Haverhill / Northwest
+  Hillsborough County
+  Route 125 / Rockingham
+  Deerfield / Northwood
+  Rochester / Inland Seacoast
+  Ossipee / Wakefield
+  plus isolated completion stops.
 
-Upload all files to the root of the existing GitHub repository and replace older files.
+IMPORTANT
+- Some newly audited records use “Historical Marker #X” as a safe placeholder title
+  until the individual title is verified.
+- Town and marker-number coverage is now complete against the statewide community index.
+- Existing progress and photo storage are preserved.
+
+Upload all five files to the root of the existing GitHub repository and replace older files.
