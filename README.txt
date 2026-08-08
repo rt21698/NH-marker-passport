@@ -1,16 +1,15 @@
-NH Historical Marker Passport v6 — Lakes Region Expansion
+NH Historical Marker Passport v7 — Upper Valley + Sunapee Expansion
 
 NEW:
-- 14 total day trips
-- Four Lakes Region trips:
-  Day 11 Southern Lakes
-  Day 12 Winnipesaukee East
-  Day 13 Squam & Sandwich
-  Day 14 Tamworth & Ossipee Gateway
-- Lakes Region marker towns include Alton, Ashland, Barnstead, Belmont,
-  Center Harbor, Gilford, Gilmanton, Holderness, Laconia, Madison,
-  New Durham, Sandwich, Tamworth, Tuftonboro, Wolfeboro, and Effingham
-- Lakes Region added to Quick Trip Planner
-- Preserves existing progress and photo storage
+- 17 total day trips
+- Day 15 Sunapee South
+- Day 16 Claremont & Cornish
+- Day 17 Upper Valley Core
+- Adds Charlestown, Claremont, Cornish, Plainfield, Newport, Newbury,
+  Bradford, Goshen, Lempster, Hanover, Enfield, Canaan, and Orford
+- Claremont #57 Union Church is marked out for repair and is excluded from the active route
+- Upper Valley / Sunapee added to Quick Trip Planner
+- Preserves existing progress and selfie storage
 
-Upload all five files to the root of the existing GitHub repository and replace older files.
+Some marker titles are intentionally labeled by number only until title verification is completed.
+Upload all files to the root of the existing GitHub repository and replace older files.
