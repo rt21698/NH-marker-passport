@@ -1,15 +1,17 @@
-NH Historical Marker Passport v7 — Upper Valley + Sunapee Expansion
+NH Historical Marker Passport v8 — White Mountains Expansion
 
 NEW:
-- 17 total day trips
-- Day 15 Sunapee South
-- Day 16 Claremont & Cornish
-- Day 17 Upper Valley Core
-- Adds Charlestown, Claremont, Cornish, Plainfield, Newport, Newbury,
-  Bradford, Goshen, Lempster, Hanover, Enfield, Canaan, and Orford
-- Claremont #57 Union Church is marked out for repair and is excluded from the active route
-- Upper Valley / Sunapee added to Quick Trip Planner
+- 21 total day trips
+- Day 18 Southern White Mountains
+- Day 19 Littleton & Lancaster
+- Day 20 Crawford Notch
+- Day 21 Conway & Pinkham Notch
+- Adds White Mountains markers in Franconia, Sugar Hill, Easton, Littleton,
+  Lisbon, Bethlehem, Lancaster, Jefferson, Carroll, Bean's Grant,
+  Hart's Location, Bartlett, Conway, Pinkham's Grant, Campton, Lincoln,
+  Benton, and Warren
+- White Mountains added to Quick Trip Planner
 - Preserves existing progress and selfie storage
 
-Some marker titles are intentionally labeled by number only until title verification is completed.
+Some marker titles remain number-only until title verification is completed.
 Upload all files to the root of the existing GitHub repository and replace older files.
