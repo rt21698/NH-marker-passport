@@ -1,16 +1,16 @@
-NH Historical Marker Passport v16.2 — Photo Upload
+NH Historical Marker Passport v16.3 — iPhone Photo Picker Fix
 
-NEW
-- The selfie button now opens the iPhone photo/file picker instead of forcing the camera.
-- "Take / Choose Selfie" is now labeled "Upload Selfie."
-- Existing saved selfies remain compatible.
-- All navigation, map, Near Me, Adventure Mode, notes, favorites, and progress features remain unchanged.
+WHY
+The prior version removed the HTML camera-capture attribute, but iOS can still behave differently when a hidden file input is opened by JavaScript.
 
-IPHONE WORKFLOW
-1. Take your selfie normally with the iPhone Camera app.
-2. Open the marker in the passport.
-3. Tap Upload Selfie.
-4. Choose the photo from your Photos library.
+FIX
+- The app no longer programmatically clicks the photo input.
+- "Choose Selfie from Photos" is now a native HTML file-picker label tied directly to the image input.
+- No capture/camera attribute exists anywhere in the app.
+- Image types are limited to common photo-library formats.
+- On iPhone, iOS may still display its own system menu. Choose "Photo Library" there.
+- A website cannot force iOS to skip Apple's system picker menu entirely.
 
-UPLOAD
-Upload all files from this ZIP to the root of the existing GitHub repository and replace older files.
+Existing photos, progress, notes, navigation, map, Near Me, and Adventure Mode remain compatible.
+
+Upload all files from the ZIP to the root of the existing GitHub repository and replace the older files.
