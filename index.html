@@ -63,7 +63,7 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Real NH Map • v17.5</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Startup Fixed • v17.6</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
@@ -322,6 +322,95 @@ function renderTrips(){
    host.appendChild(c)
  })
 }
+
+function locate(includeVisited){
+ const st=document.getElementById("nearStatus"),out=document.getElementById("nearResults");
+ st.textContent="Getting location…";
+ navigator.geolocation.getCurrentPosition(p=>{
+   const lat=p.coords.latitude,lon=p.coords.longitude;currentPos={lat,lon};
+   const list=M.filter(m=>m.status==="installed"&&validGps(m)&&(includeVisited||(!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound)))
+     .map(m=>({...m,d:miles(lat,lon,m.lat,m.lon)})).sort((a,b)=>a.d-b.d).slice(0,12);
+   st.textContent="Closest candidates are found quickly by proximity. Tap Road Miles on a result for actual driving distance.";
+   out.innerHTML=list.map(m=>`<div class="near"><div class="nearTop"><div><div class="muted">#${m.num} • ${m.town}</div><h3>${displayName(m)}</h3>${officialNameNote(m)}</div></div><p class="muted">${m.location||""}</p><div class="roadMiles" id="road-${m.num}"></div><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button class="secondary" type="button" onclick="roadMilesFromCurrent(${m.num})">Road Miles</button></div></div>`).join("");
+ },()=>{st.textContent="Could not get your location. Check Safari location permission and try again."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
+}
+
+async function roadMilesFromCurrent(num){
+ const box=document.getElementById(`road-${num}`),m=byNum[num];
+ if(!box)return;
+ if(!currentPos){box.textContent="Tap Use My Location first.";return}
+ box.textContent="Calculating road distance…";
+ try{
+   const endpoint=`https://router.project-osrm.org/route/v1/driving/${currentPos.lon},${currentPos.lat};${m.lon},${m.lat}?overview=false`;
+   const r=await fetch(endpoint),data=await r.json(),route=data.routes?.[0];
+   if(!route)throw new Error("No route");
+   box.textContent=`Driving: ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)}`;
+ }catch(e){box.textContent="Road distance unavailable right now."}
+}
+
+function buildAdventure(){
+ const st=document.getElementById("advStatus"),out=document.getElementById("advResults"),
+       hours=+document.getElementById("advHours").value,radius=+document.getElementById("advRadius").value,
+       limit=hours<=2?6:hours<=4?11:20;
+ st.textContent="Getting location…";
+ navigator.geolocation.getCurrentPosition(p=>{
+   let lat=p.coords.latitude,lon=p.coords.longitude;currentPos={lat,lon};
+   let cands=M.filter(m=>m.status==="installed"&&validGps(m)&&!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound)
+     .map(m=>({...m,startD:miles(lat,lon,m.lat,m.lon)})).filter(m=>m.startD<=radius);
+   const route=[];let cur={lat,lon};
+   while(cands.length&&route.length<limit){
+     cands.sort((a,b)=>miles(cur.lat,cur.lon,a.lat,a.lon)-miles(cur.lat,cur.lon,b.lat,b.lon));
+     const x=cands.shift();x.leg=miles(cur.lat,cur.lon,x.lat,x.lon);route.push(x);cur=x;
+   }
+   st.textContent=`Suggested ${route.length} stops. Tap Calculate Road Miles for actual driving distance.`;
+   out.innerHTML=`<div class="card"><div class="btnrow"><button id="advRoad" class="secondary" ${route.length<2?"disabled":""}>Calculate Road Miles</button></div><div id="advRoadSummary" class="muted"></div></div>`+
+     route.map((m,i)=>`<div class="near" data-adv="${i}"><div class="nearTop"><div><div class="muted">Stop ${i+1} • #${m.num} • ${m.town}</div><h3>${displayName(m)}</h3>${officialNameNote(m)}</div></div><p class="muted">${m.location||""}</p><div class="roadMiles"></div><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a></div></div>`).join("");
+   const btn=document.getElementById("advRoad");
+   if(btn)btn.addEventListener("click",async()=>{
+     const sum=document.getElementById("advRoadSummary");btn.disabled=true;btn.textContent="Calculating…";
+     try{
+       const rr=await roadRouteForMarkers(route);
+       sum.textContent=`Road route: ${formatMiles(rr.distance)} mi • about ${formatTime(rr.duration)} driving`;
+       const legs=rr.legs||[];
+       route.forEach((m,i)=>{
+         const b=document.querySelector(`[data-adv="${i}"] .roadMiles`);
+         if(b)b.textContent=i===0?"Start":legs[i-1]?`Road leg: ${formatMiles(legs[i-1].distance)} mi • ${formatTime(legs[i-1].duration)}`:"";
+       });
+       btn.textContent="Refresh Road Miles";
+     }catch(e){sum.textContent="Road-routing service unavailable right now.";btn.textContent="Try Again"}
+     finally{btn.disabled=false}
+   });
+ },()=>{st.textContent="Could not get location."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
+}
+
+async function init(){
+ try{
+   const [mr,tr]=await Promise.all([
+     fetch("./markers.json?v=17.6",{cache:"no-store"}),
+     fetch("./trips.json?v=17.6",{cache:"no-store"})
+   ]);
+   if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
+   M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
+   renderPassport();renderTrips();renderMap();updateStats();
+
+   document.getElementById("search").addEventListener("input",e=>{
+     const q=e.target.value.toLowerCase().trim();
+     document.querySelectorAll(".marker").forEach(x=>x.style.display=!q||x.dataset.search.includes(q)?"block":"none");
+   });
+   document.getElementById("nearBtn").addEventListener("click",()=>locate(false));
+   document.getElementById("nearAll").addEventListener("click",()=>locate(true));
+   document.getElementById("advBuild").addEventListener("click",buildAdventure);
+
+   document.getElementById("ours").value=state.score.ours||0;
+   document.getElementById("theirs").value=state.score.theirs||0;
+   document.getElementById("ours").addEventListener("change",e=>{state.score.ours=+e.target.value||0;save()});
+   document.getElementById("theirs").addEventListener("change",e=>{state.score.theirs=+e.target.value||0;save()});
+ }catch(err){
+   console.error(err);
+   document.getElementById("nextText").textContent="App data failed to load. Make sure markers.json and trips.json were uploaded with index.html, then refresh Safari.";
+ }
+}
 init();
+
 </script>
 </body></html>

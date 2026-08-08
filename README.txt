@@ -1,36 +1,32 @@
-NH Historical Marker Passport v17.5 — Real NH Map + Status Pins
+NH Historical Marker Passport v17.6 — STARTUP FIX
 
-MAP UPGRADE
-- Replaces the homemade NH silhouette with the actual New Hampshire state boundary.
-- Adds faint municipal/town boundary lines using the NH DOT / NH GRANIT boundary map service.
-- Official marker coordinates are projected directly over the same geographic bounding box.
+IMPORTANT FIX
+v17.4/v17.5 accidentally lost four JavaScript functions during the road-mileage edit:
+- locate()
+- roadMilesFromCurrent()
+- buildAdventure()
+- init()
 
-PIN DESIGN
-- Visited: green filled circle with check mark.
-- Unvisited: white/gray outlined circle with center dot.
-- Site checked / marker not found: orange filled circle with X.
-- Unavailable / retired / repair: gold warning triangle with !.
-- Pin tap targets are larger than the visible symbol for easier iPhone use.
-- Selected pins receive a darker outline.
+Because init() was missing, markers.json and trips.json were never loaded. That caused:
+- 0 active markers
+- "Loading..." forever
+- empty Passport/Trips/Map data
+- Near Me and Adventure not functioning
 
-DETAIL CARD
-- Tap any marker, including unvisited markers.
-- Shows custom name (if set), official DHR title, town, location, status, visited/not-found state, exact Apple pin.
-- Saved selfie appears directly in the map detail card for visited markers.
+v17.6 restores those functions and retains:
+- Real NH map with faint town boundaries
+- Different status pin shapes/colors
+- Visited/unvisited/not-found/unavailable markers
+- Selfies on map details
+- Custom marker names
+- Road-network mileage
+- Condensed trips
+- Exact Apple Maps coordinates
+- Not Found tracking
+- Notes, dates, favorites, competition score
 
-DATA SOURCE FOR TOWN LINES
-NH DOT / NH GRANIT ArcGIS boundary service:
-Boundaries/NHDOT_BOUNDARIES_Towns
-Town lines layer 3 and NH state boundary layer 4.
-
-NOTE
-The town-line backdrop is loaded as a lightweight map image from NH DOT when the Map tab is viewed.
-If the phone has no data connection, marker pins and the app still work, but the boundary backdrop may not appear.
-
-All v17.4 features remain: road miles, custom marker names, condensed trips, Not Found, Photos upload, Near Me, Adventure, exact Apple pins.
-
-No service worker is included. Keep service-worker.js deleted.
-Upload:
+Keep service-worker.js deleted.
+Upload all five files:
 index.html
 markers.json
 trips.json
