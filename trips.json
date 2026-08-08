@@ -6,111 +6,123 @@
     "markers": [
       184,
       105,
-      128,
-      66,
-      175,
-      147,
       148,
+      147,
+      175,
+      66,
       110,
       80,
       125,
       238,
       236,
+      128,
       67
-    ]
+    ],
+    "estimated_straight_line_miles": 10.6,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "monadnock-west",
     "name": "Day 2 — Monadnock West",
     "subtitle": "Keene • Connecticut River • Southwest Loop",
     "markers": [
-      69,
-      226,
-      232,
-      216,
-      93,
-      168,
-      52,
-      27,
-      61,
-      74,
-      60,
-      95,
       204,
       112,
+      95,
+      60,
+      216,
+      74,
+      93,
+      168,
+      69,
+      226,
+      86,
+      22,
+      232,
       59,
       99,
-      22,
-      86
-    ]
+      52,
+      27,
+      61
+    ],
+    "estimated_straight_line_miles": 95.4,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "monadnock-east",
     "name": "Day 3 — Monadnock East",
     "subtitle": "Peterborough • Jaffrey • New Ipswich Loop",
     "markers": [
+      13,
+      68,
+      101,
+      137,
+      10,
+      12,
+      210,
+      206,
+      130,
+      43,
+      23,
       153,
       178,
       228,
-      43,
-      23,
-      130,
-      206,
-      210,
-      12,
-      10,
-      137,
-      101,
-      68,
-      138,
-      13
-    ]
+      138
+    ],
+    "estimated_straight_line_miles": 71.6,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "manchester",
     "name": "Day 4 — Manchester & Merrimack",
     "subtitle": "Hooksett • Manchester • Bedford • Merrimack",
     "markers": [
-      132,
-      225,
+      29,
+      79,
+      102,
       208,
       124,
-      102,
-      29,
-      79
-    ]
+      225,
+      132
+    ],
+    "estimated_straight_line_miles": 19.7,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "derry-salem",
     "name": "Day 5 — Derry, Londonderry & Salem",
     "subtitle": "Chester • Derry • Londonderry • Salem",
     "markers": [
-      14,
-      139,
-      48,
-      58,
-      266,
       166,
+      266,
+      58,
+      48,
       72,
+      253,
       221,
-      253
-    ]
+      14,
+      139
+    ],
+    "estimated_straight_line_miles": 29.0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "nashua-milford",
     "name": "Day 6 — Nashua & Milford Loop",
     "subtitle": "New Boston • Weare • Amherst • Milford • Brookline • Hollis • Nashua",
     "markers": [
-      143,
       192,
+      143,
       146,
       3,
-      133,
       268,
+      133,
       271,
       260,
       267
-    ]
+    ],
+    "estimated_straight_line_miles": 44.1,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "seacoast-south",
@@ -118,90 +130,102 @@
     "subtitle": "Seabrook • Hampton • North Hampton • Rye • New Castle",
     "markers": [
       103,
-      119,
       120,
+      119,
       62,
       63,
       18,
       78,
       4
-    ]
+    ],
+    "estimated_straight_line_miles": 19.5,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "portsmouth",
     "name": "Day 8 — Portsmouth Sweep",
     "subtitle": "Portsmouth • Greenland • Newington",
     "markers": [
-      127,
-      194,
-      75,
-      114,
-      234,
-      286,
       113,
+      75,
+      234,
+      114,
+      286,
+      194,
+      127,
       151
-    ]
+    ],
+    "estimated_straight_line_miles": 15.4,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "exeter-durham",
     "name": "Day 9 — Exeter to Durham",
     "subtitle": "Exeter • Newfields • Newmarket • Durham",
     "markers": [
-      97,
+      131,
       161,
       240,
-      131,
+      97,
       272,
       290,
       209,
       154,
       89,
       8
-    ]
+    ],
+    "estimated_straight_line_miles": 14.2,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "dover-north",
     "name": "Day 10 — Dover & North Seacoast",
     "subtitle": "Dover • Rollinsford • Somersworth",
     "markers": [
-      165,
+      287,
+      280,
+      88,
+      282,
       264,
       289,
-      282,
-      51,
-      88,
-      287,
-      280
-    ]
+      165,
+      51
+    ],
+    "estimated_straight_line_miles": 13.5,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "lakes-south",
     "name": "Day 11 — Southern Lakes",
     "subtitle": "Barnstead • Gilmanton • Belmont • Laconia • Gilford",
     "markers": [
-      201,
-      17,
       235,
       135,
-      172,
       118,
-      239
-    ]
+      239,
+      172,
+      17,
+      201
+    ],
+    "estimated_straight_line_miles": 37.1,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "winnipesaukee-east",
     "name": "Day 12 — Winnipesaukee East",
     "subtitle": "Alton • New Durham • Wolfeboro • Tuftonboro",
     "markers": [
-      164,
-      288,
-      222,
-      53,
+      276,
+      285,
       116,
       242,
-      276,
-      285
-    ]
+      53,
+      164,
+      288,
+      222
+    ],
+    "estimated_straight_line_miles": 28.8,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "squam-sandwich",
@@ -212,51 +236,59 @@
       100,
       163,
       7,
-      82,
-      248
-    ]
+      248,
+      82
+    ],
+    "estimated_straight_line_miles": 26.7,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "tamworth-ossipee",
     "name": "Day 14 — Tamworth & Ossipee Gateway",
     "subtitle": "Tamworth • Madison • Effingham",
     "markers": [
-      90,
       155,
+      90,
       207,
       83
-    ]
+    ],
+    "estimated_straight_line_miles": 23.0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "sunapee-south",
     "name": "Day 15 — Sunapee South",
     "subtitle": "Warner • Bradford • Newbury • Newport • Goshen • Lempster",
     "markers": [
-      243,
-      108,
-      81,
+      182,
+      140,
       6,
       106,
-      140,
-      182
-    ]
+      81,
+      108,
+      243
+    ],
+    "estimated_straight_line_miles": 36.6,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "claremont-cornish",
     "name": "Day 16 — Claremont & Cornish",
     "subtitle": "Charlestown • Claremont • Cornish • Plainfield",
     "markers": [
-      2,
       117,
+      2,
       177,
       41,
       76,
-      134,
       158,
-      265,
+      134,
       16,
+      265,
       77
-    ]
+    ],
+    "estimated_straight_line_miles": 29.1,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "upper-valley-core",
@@ -264,83 +296,95 @@
     "subtitle": "Hanover • Enfield • Canaan • Orford",
     "markers": [
       261,
-      202,
       241,
-      21,
+      202,
       246,
+      21,
       33
-    ]
+    ],
+    "estimated_straight_line_miles": 35.5,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "white-south",
     "name": "Day 18 — Southern White Mountains",
     "subtitle": "Campton • Lincoln • Franconia • Sugar Hill • Easton",
     "markers": [
-      196,
+      200,
       224,
-      9,
       263,
+      9,
       73,
-      200
-    ]
+      196
+    ],
+    "estimated_straight_line_miles": 48.2,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "white-west",
     "name": "Day 19 — Littleton & Lancaster",
     "subtitle": "Littleton • Lisbon • Bethlehem • Lancaster • Jefferson",
     "markers": [
-      71,
-      185,
       70,
+      185,
+      71,
+      257,
       198,
       218,
-      257,
-      84,
+      152,
+      229,
+      19,
       173,
       219,
-      19,
-      152,
-      229
-    ]
+      84
+    ],
+    "estimated_straight_line_miles": 39.7,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "crawford-notch",
     "name": "Day 20 — Crawford Notch",
     "subtitle": "Carroll • Bretton Woods • Hart's Location",
     "markers": [
-      30,
-      87,
-      122,
-      233,
       274,
+      233,
+      30,
+      122,
+      87,
       45,
-      186,
-      213
-    ]
+      213,
+      186
+    ],
+    "estimated_straight_line_miles": 26.1,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "conway-notch",
     "name": "Day 21 — Conway & Pinkham Notch",
     "subtitle": "Bartlett • Conway • Pinkham's Grant",
     "markers": [
+      11,
       109,
-      38,
-      11
-    ]
+      38
+    ],
+    "estimated_straight_line_miles": 14.3,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "berlin-milan",
     "name": "Day 22 — Berlin & Milan",
     "subtitle": "Berlin • Milan • Stark",
     "markers": [
-      159,
-      215,
-      254,
-      255,
-      227,
+      150,
       284,
-      150
-    ]
+      227,
+      215,
+      159,
+      254,
+      255
+    ],
+    "estimated_straight_line_miles": 18.0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "far-north",
@@ -349,75 +393,85 @@
     "markers": [
       34,
       171,
-      64,
       115,
-      1
-    ]
+      1,
+      64
+    ],
+    "estimated_straight_line_miles": 40.4,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "capital-catchup",
     "name": "Day 24 — Capital Region Catch-Up",
     "subtitle": "Boscawen • Canterbury • Loudon • Pembroke • Allenstown • Hopkinton",
     "markers": [
+      195,
       49,
       256,
       283,
       15,
+      250,
       144,
       187,
-      250,
-      193,
-      205,
       211,
       230,
-      195
-    ]
+      193,
+      205
+    ],
+    "estimated_straight_line_miles": 44.3,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "route4-catchup",
     "name": "Day 25 — Route 4 & Lakes Gateway",
     "subtitle": "Franklin • Tilton • Hill • Plymouth • Rumney • Hebron",
     "markers": [
-      91,
-      129,
-      149,
-      162,
+      174,
       179,
       189,
-      174,
-      223
-    ]
+      223,
+      162,
+      129,
+      91,
+      149
+    ],
+    "estimated_straight_line_miles": 48.5,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "haverhill-northwest",
     "name": "Day 26 — Haverhill & Northwest",
     "subtitle": "Bath • Haverhill • Grafton • Warren",
     "markers": [
-      121,
-      217,
-      56,
-      104,
       136,
       160,
+      104,
+      56,
       190,
-      251,
+      217,
+      121,
+      231,
       252,
-      231
-    ]
+      251
+    ],
+    "estimated_straight_line_miles": 55.7,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "hillsborough-catchup",
     "name": "Day 27 — Hillsborough County Catch-Up",
     "subtitle": "Hillsborough • Washington • Mason • Peterborough",
     "markers": [
-      65,
-      107,
-      203,
       94,
-      35,
+      107,
+      65,
+      203,
       244,
-      270
-    ]
+      270,
+      35
+    ],
+    "estimated_straight_line_miles": 41.5,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "route125-catchup",
@@ -425,51 +479,57 @@
     "subtitle": "Sandown • Hampstead • Kingston • Fremont • Danville • Brentwood",
     "markers": [
       26,
-      247,
-      46,
-      142,
-      156,
-      157,
-      167,
-      170,
-      277,
       169,
       258,
+      277,
+      142,
+      249,
       180,
-      249
-    ]
+      46,
+      167,
+      156,
+      157,
+      170,
+      247
+    ],
+    "estimated_straight_line_miles": 27.9,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "deerfield-northwood",
     "name": "Day 29 — Deerfield & Northwood",
     "subtitle": "Candia • Deerfield • Northwood • Nottingham • Epsom • Pittsfield",
     "markers": [
-      141,
-      237,
+      199,
+      181,
+      24,
       25,
       145,
       183,
       214,
-      24,
-      181,
+      141,
+      237,
       259,
-      199,
       197
-    ]
+    ],
+    "estimated_straight_line_miles": 46.5,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "rochester-catchup",
     "name": "Day 30 — Rochester & Inland Seacoast",
     "subtitle": "Barrington • Rochester • Strafford • Farmington",
     "markers": [
-      96,
+      291,
       212,
       279,
-      42,
+      96,
       191,
-      291,
+      42,
       98
-    ]
+    ],
+    "estimated_straight_line_miles": 23.8,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "ossipee-wakefield",
@@ -480,7 +540,9 @@
       20,
       5,
       123
-    ]
+    ],
+    "estimated_straight_line_miles": 28.6,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "claremont-extra",
@@ -488,7 +550,9 @@
     "subtitle": "Claremont completion stop",
     "markers": [
       188
-    ]
+    ],
+    "estimated_straight_line_miles": 0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "hampton-extra",
@@ -496,7 +560,9 @@
     "subtitle": "Hampton completion stop",
     "markers": [
       28
-    ]
+    ],
+    "estimated_straight_line_miles": 0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "randolph-extra",
@@ -504,7 +570,9 @@
     "subtitle": "Randolph",
     "markers": [
       220
-    ]
+    ],
+    "estimated_straight_line_miles": 0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "pelham-extra",
@@ -512,26 +580,30 @@
     "subtitle": "Pelham",
     "markers": [
       176
-    ]
+    ],
+    "estimated_straight_line_miles": 0,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   },
   {
     "id": "statewide-cleanup",
     "name": "Day 36 — Statewide Cleanup",
     "subtitle": "Remaining active markers not yet assigned to a regional loop",
     "markers": [
-      32,
-      37,
       40,
-      44,
-      50,
       54,
-      111,
-      245,
+      44,
       262,
       269,
-      273,
       275,
+      245,
+      111,
+      273,
+      32,
+      37,
+      50,
       281
-    ]
+    ],
+    "estimated_straight_line_miles": 181.4,
+    "route_method": "nearest-neighbor using official DHR GPS coordinates; Apple Maps controls actual road routing"
   }
 ]

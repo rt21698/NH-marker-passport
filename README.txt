@@ -1,40 +1,21 @@
-NH Historical Marker Passport v13 - OFFICIAL NH DHR DATABASE REBUILD
+NH Historical Marker Passport v14 — Interactive Statewide Map
 
-SOURCE OF TRUTH
-This version rebuilds all 291 marker records directly from the two uploaded
-New Hampshire Division of Historical Resources inventory PDFs dated February 19, 2025:
-- highway-markers-by-number.pdf
-- highway-markers-by-town.pdf
+NEW
+- Statewide interactive marker map tab.
+- Map uses the official NH DHR GPS coordinates stored in markers.json.
+- Visited, unvisited, and unavailable markers display differently.
+- Tap a pin to see official title, town, written location, status, Apple Maps button, and passport shortcut.
+- Every existing trip was reordered using nearest-neighbor geometry over the official GPS coordinates to reduce obvious backtracking.
+- Trip cards now show approximate pin-to-pin mileage.
 
-OFFICIAL FIELDS NOW STORED FOR ALL 291 MARKERS
-- marker number
-- official inventory title
-- town
-- written roadside location
-- official status
-- GPS north / west coordinates
-- source metadata
+IMPORTANT ROUTING NOTE
+The route optimizer uses straight-line distance between official marker GPS pins.
+It does NOT know current road closures, turn restrictions, traffic, seasonal roads, parking,
+or actual travel time. Apple Maps remains the final navigation authority.
 
-QUALITY CHECKS
-- 291 / 291 marker numbers parsed with no gaps.
-- Both PDFs were cross-checked for GPS and status agreement.
-- 290 / 291 published coordinate pairs pass a New Hampshire geographic sanity check.
-- #281 has a malformed positive GpsWest value in BOTH official PDFs. The value is preserved
-  as published and flagged; Apple Maps falls back to the official written location for that marker.
-- County is left blank because these inventory PDFs do not provide county.
-- Full inscription text is left blank because these inventory PDFs provide inventory titles/locations,
-  not the full historical marker inscription.
+DATA QUALITY
+- Official DHR source data remains unchanged from v13.
+- Marker #281 retains the official malformed west-coordinate warning and falls back to written-location navigation.
+- Existing checkoffs, selfies, notes, favorites, and scores remain compatible.
 
-OFFICIAL STATUS COUNTS
-- INSTALLED: 282
-- OUT FOR REPAIR: 4
-- REMOVED FOR CONSTRUCTION: 1
-- RETIRED: 4
-
-APP CHANGES
-- Marker cards now show the official roadside location.
-- Apple Maps uses official GPS coordinates when valid.
-- Invalid official coordinates use the official written location instead.
-- Previous checkoffs, selfies, notes, favorites, and competition scores remain compatible.
-
-UPLOAD ALL FILES FROM THIS ZIP TO THE ROOT OF YOUR EXISTING GITHUB REPOSITORY.
+Upload all files from this ZIP to the root of the existing GitHub repository and replace older files.

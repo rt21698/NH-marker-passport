@@ -18,15 +18,39 @@ h2,h3{margin:0 0 7px}.muted{font-size:14px;color:var(--muted)}.big{font-size:27p
 .status{display:inline-block;font-size:11px;font-weight:800;padding:4px 7px;border-radius:999px;margin-top:5px;background:#e5efe7;color:#28563f}.status.repair{background:#f7df9d;color:#684f12}
 input[type=date],input[type=number],select,textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:11px;padding:10px;background:#fff}label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}textarea{min-height:65px}.search{width:100%;font:inherit;border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:9px}
 .photo{display:none;width:100%;max-height:280px;object-fit:cover;border-radius:12px;margin-top:8px}.score{display:grid;grid-template-columns:1fr 1fr;gap:9px}.notice{background:#fff8e7;border:1px solid #ead49c;border-radius:14px;padding:12px;font-size:13px;color:#665024}
+
+.mapPin{cursor:pointer;stroke:#fff;stroke-width:1.2}
+.mapPin.visited{fill:#2f6b4c}.mapPin.unvisited{fill:#6d7771}.mapPin.unavailable{fill:#c49a3a}
+.mapPin:hover{stroke-width:2}
 </style></head><body>
 <header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Statewide Audit • v10</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>loaded</span></div><div class="stat"><b id="tripN">36</b><span>trips</span></div></div><div class="track"><div class="bar" id="bar"></div></div></div></header>
-<nav><button class="tab active" data-v="home">Home</button><button class="tab" data-v="trips">Trips</button><button class="tab" data-v="planner">Planner</button><button class="tab" data-v="passport">Passport</button><button class="tab" data-v="race">Race</button></nav>
+<nav style="grid-template-columns:repeat(6,1fr)"><button class="tab active" data-v="home">Home</button><button class="tab" data-v="map">Map</button><button class="tab" data-v="trips">Trips</button><button class="tab" data-v="planner">Planner</button><button class="tab" data-v="passport">Passport</button><button class="tab" data-v="race">Race</button></nav>
 <main class="wrap">
 <section id="home" class="view active"><div class="card"><h2>Continue Adventure</h2><p id="nextText" class="muted"></p><div class="btnrow"><a id="nextBtn" class="btn">Apple Maps</a><button id="chooseTrip" class="secondary">Choose trip</button></div></div>
 <div class="card"><h3>Statewide database complete</h3><div class="big">36 day trips</div><p class="muted">All marker numbers 1–291 are now represented in the passport, with retired and unavailable markers separated from active competition totals.</p><div id="homeProgress"></div></div>
 <div class="notice"><strong>Audit complete:</strong> retired and temporarily unavailable markers stay searchable but do not count toward active completion totals.</div></section>
 
+
+<section id="map" class="view">
+  <div class="card">
+    <h2>Statewide Marker Map</h2>
+    <p class="muted">Pins use the official NH DHR GPS inventory. Tap a marker pin to open its passport details or navigate with Apple Maps.</p>
+    <div class="chips">
+      <span class="chip">● Unvisited</span>
+      <span class="chip">✓ Visited</span>
+      <span class="chip">⚠ Unavailable</span>
+    </div>
+  </div>
+  <div class="card" style="padding:8px;overflow:hidden">
+    <svg id="stateMap" viewBox="0 0 360 620" role="img" aria-label="Map of New Hampshire historical markers" style="width:100%;height:auto;background:#eef3ed;border-radius:14px">
+      <path d="M137 18 L220 22 L232 95 L254 136 L250 190 L275 254 L261 316 L291 375 L272 432 L301 492 L286 585 L107 591 L96 529 L79 482 L89 414 L72 358 L88 296 L79 244 L102 187 L101 128 L123 82 Z"
+        fill="#f7f2e7" stroke="#7d8d83" stroke-width="2"/>
+      <g id="mapPins"></g>
+    </svg>
+  </div>
+  <div id="mapInfo" class="card"><h3>Tap a pin</h3><p class="muted">Marker details will appear here.</p></div>
+</section>
 <section id="trips" class="view"><div id="tripCards"></div></section>
 
 <section id="planner" class="view"><div class="card"><h2>Quick Trip Planner</h2><p class="muted">Pick how much time you want to spend and the passport will suggest one of your unfinished loaded trips.</p>
@@ -51,7 +75,7 @@ function view(id){document.querySelectorAll(".view").forEach(x=>x.classList.togg
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>view(b.dataset.v)));document.getElementById("chooseTrip").addEventListener("click",()=>view("trips"));
 
 const tc=document.getElementById("tripCards");
-T.forEach(t=>{const ms=t.markers.map(n=>byNum[n]).filter(Boolean);const c=document.createElement("div");c.className="trip";c.innerHTML=`<h2>${t.name}</h2><p class="muted">${t.subtitle}</p><div class="chips"><span class="chip">📍 ${ms.length} stops</span><span class="chip progress" data-trip="${t.id}"></span><span class="chip">🧭 Apple Maps</span></div><div class="routes"></div><div class="btnrow"><a class="btn" href="${url(ms[0])}">Start trip</a></div>`;ms.forEach((m,i)=>{const r=document.createElement("div");r.className="route";r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${m.name}</b><div class="muted">${m.town}</div></div><a class="btn secondary" style="padding:8px" href="${url(m)}">Go</a>`;c.querySelector(".routes").appendChild(r)});tc.appendChild(c)});
+T.forEach(t=>{const ms=t.markers.map(n=>byNum[n]).filter(Boolean);const c=document.createElement("div");c.className="trip";c.innerHTML=`<h2>${t.name}</h2><p class="muted">${t.subtitle}</p><div class="chips"><span class="chip">📍 ${ms.length} stops</span><span class="chip progress" data-trip="${t.id}"></span><span class="chip">🧭 Apple Maps</span>${t.estimated_straight_line_miles?`<span class="chip">≈ ${t.estimated_straight_line_miles} mi pin-to-pin</span>`:""}</div><div class="routes"></div><div class="btnrow"><a class="btn" href="${url(ms[0])}">Start trip</a></div>`;ms.forEach((m,i)=>{const r=document.createElement("div");r.className="route";r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${m.name}</b><div class="muted">${m.town}</div></div><a class="btn secondary" style="padding:8px" href="${url(m)}">Go</a>`;c.querySelector(".routes").appendChild(r)});tc.appendChild(c)});
 
 const host=document.getElementById("markerHost");
 M.sort((a,b)=>a.num-b.num).forEach(m=>{const s=state.markers[m.num]||{},d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+((m.status==="repair"||m.status==="construction"||m.status==="retired")?"repair":"");d.dataset.search=(m.num+" "+m.name+" "+m.town+" "+m.status).toLowerCase();d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${(m.status==="repair"||m.status==="construction"||m.status==="retired")?"disabled":""}><div class="mt"><b>#${m.num} — ${m.name}</b><small>${m.town}, New Hampshire</small><span class="status ${(m.status==="repair"||m.status==="construction"||m.status==="retired")?"repair":""}">${m.status_official|| (m.status==="repair"?"OUT FOR REPAIR":m.status==="construction"?"REMOVED FOR CONSTRUCTION":m.status==="retired"?"RETIRED":"INSTALLED")}</span></div><span>${s.favorite?"⭐":"›"}</span></summary><div class="mb"><div class="btnrow"><a class="btn" href="${url(m)}">Apple Maps</a><button class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button></div><div class="muted" style="margin-top:10px"><strong>Official location:</strong> ${m.location||"Not listed"}</div>${m.coordinate_warning?`<div class="notice" style="margin-top:8px"><strong>GPS warning:</strong> ${m.coordinate_warning}</div>`:""}<label>Date visited</label><input class="date" type="date" value="${s.date||""}"><label>Selfie</label><div class="btnrow"><button class="gold pick">Take / Choose Selfie</button><button class="secondary remove">Remove</button></div><input class="file" type="file" accept="image/*" capture="user" hidden><img class="photo"><label>Notes</label><textarea class="notes">${s.notes||""}</textarea></div>`;host.appendChild(d);
@@ -63,6 +87,46 @@ const groups={"capital":["concord","capital-catchup"],"monadnock":["monadnock-we
 document.getElementById("recommend").addEventListener("click",()=>{const h=+document.getElementById("hours").value,a=document.getElementById("area").value;let cand=T.filter(t=>a==="any"||groups[a]?.includes(t.id));cand=cand.filter(t=>!t.markers.every(n=>state.markers[n]?.done));let pick;if(h<=2)pick=cand.slice().sort((x,y)=>x.markers.length-y.markers.length)[0];else if(h>=8)pick=cand.slice().sort((x,y)=>y.markers.length-x.markers.length)[0];else pick=cand[Math.floor(cand.length/2)]||cand[0];const box=document.getElementById("recommendation");if(!pick){box.innerHTML='<div class="card"><h3>Nice!</h3><p>You have completed every loaded trip in that area.</p></div>';return}let rem=pick.markers.filter(n=>!state.markers[n]?.done);box.innerHTML=`<div class="card"><h3>${pick.name}</h3><p class="muted">${pick.subtitle}</p><div class="big">${rem.length} left</div><div class="btnrow"><a class="btn" href="${url(byNum[rem[0]])}">Start remaining route</a></div></div>`});
 
 document.getElementById("ours").value=state.score.ours||0;document.getElementById("theirs").value=state.score.theirs||0;document.getElementById("ours").addEventListener("change",e=>{state.score.ours=+e.target.value||0;save()});document.getElementById("theirs").addEventListener("change",e=>{state.score.theirs=+e.target.value||0;save()});
-function update(){const available=M.filter(m=>m.status==="installed"),done=available.filter(m=>state.markers[m.num]?.done).length;document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=available.length;document.getElementById("bar").style.width=Math.round(done/available.length*100)+"%";T.forEach(t=>{let active=t.markers.filter(x=>byNum[x]?.status==="installed");let n=active.filter(x=>state.markers[x]?.done).length;document.querySelectorAll(`[data-trip="${t.id}"]`).forEach(e=>e.textContent=`${n}/${active.length} complete`)});document.getElementById("homeProgress").innerHTML=T.map(t=>{let active=t.markers.filter(x=>byNum[x]?.status==="installed");let n=active.filter(x=>state.markers[x]?.done).length;return `<div class="route"><div class="rn">${n===t.markers.length?"✓":"•"}</div><div><b>${t.name}</b><div class="muted">${n}/${t.markers.length}</div></div></div>`}).join("");let next=null;for(const t of T){next=t.markers.map(n=>byNum[n]).find(m=>m&&m.status==="installed"&&!state.markers[m.num]?.done);if(next)break}document.getElementById("nextText").textContent=next?`Next loaded marker: #${next.num} — ${next.name}, ${next.town}`:"All loaded routes complete! 🎉";document.getElementById("nextBtn").href=next?url(next):"#";const diff=(state.score.ours||0)-(state.score.theirs||0);document.getElementById("lead").textContent=diff>0?`You lead by ${diff}`:diff<0?`In-laws lead by ${Math.abs(diff)}`:"Tied";let b=[];if(done>=1)b.push("🏅 First Marker");if(done>=25)b.push("🌲 25 Marker Club");if(done>=50)b.push("🚗 50 Marker Club");if(T[0].markers.every(n=>state.markers[n]?.done))b.push("🏛️ Concord Complete");document.getElementById("badges").innerHTML=(b.length?b:["🔒 Keep exploring"]).map(x=>`<span class="badge">${x}</span>`).join("")}update();
+
+function projectNH(lat,lon){
+  // Project NH bounds approximately into our stylized SVG.
+  const minLat=42.68,maxLat=45.31,minLon=-72.60,maxLon=-70.55;
+  const x=45+(lon-minLon)/(maxLon-minLon)*270;
+  const y=590-(lat-minLat)/(maxLat-minLat)*560;
+  return {x,y};
+}
+function renderMap(){
+  const g=document.getElementById("mapPins"); if(!g) return;
+  g.innerHTML="";
+  M.forEach(m=>{
+    const ok=Number.isFinite(m.lat)&&Number.isFinite(m.lon)&&m.lat>=42&&m.lat<=46&&m.lon>=-73&&m.lon<=-70;
+    if(!ok) return;
+    const p=projectNH(m.lat,m.lon);
+    const unavailable=m.status!=="installed";
+    const visited=!!state.markers[m.num]?.done;
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",unavailable?3.7:visited?3.5:2.8);
+    c.setAttribute("class","mapPin "+(unavailable?"unavailable":visited?"visited":"unvisited"));
+    c.setAttribute("aria-label",`Marker ${m.num} ${m.name}`);
+    c.addEventListener("click",()=>showMapMarker(m));
+    g.appendChild(c);
+  });
+}
+function showMapMarker(m){
+  const box=document.getElementById("mapInfo");
+  const s=state.markers[m.num]||{};
+  box.innerHTML=`<h3>#${m.num} — ${m.name}</h3>
+    <p class="muted">${m.town}, New Hampshire</p>
+    <p><strong>Official location:</strong> ${m.location||"Not listed"}</p>
+    <div class="chips"><span class="chip">${m.status_official||m.status}</span>${s.done?'<span class="chip">✓ Visited</span>':''}</div>
+    <div class="btnrow"><a class="btn" href="${url(m)}">Apple Maps</a><button class="secondary" type="button" onclick="openMarkerFromMap(${m.num})">Open passport</button></div>`;
+}
+function openMarkerFromMap(num){
+  view("passport");
+  const el=[...document.querySelectorAll(".marker")].find(x=>x.dataset.search?.startsWith(String(num)+" "));
+  if(el){el.open=true;setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),100);}
+}
+
+function update(){renderMap();const available=M.filter(m=>m.status==="installed"),done=available.filter(m=>state.markers[m.num]?.done).length;document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=available.length;document.getElementById("bar").style.width=Math.round(done/available.length*100)+"%";T.forEach(t=>{let active=t.markers.filter(x=>byNum[x]?.status==="installed");let n=active.filter(x=>state.markers[x]?.done).length;document.querySelectorAll(`[data-trip="${t.id}"]`).forEach(e=>e.textContent=`${n}/${active.length} complete`)});document.getElementById("homeProgress").innerHTML=T.map(t=>{let active=t.markers.filter(x=>byNum[x]?.status==="installed");let n=active.filter(x=>state.markers[x]?.done).length;return `<div class="route"><div class="rn">${n===t.markers.length?"✓":"•"}</div><div><b>${t.name}</b><div class="muted">${n}/${t.markers.length}</div></div></div>`}).join("");let next=null;for(const t of T){next=t.markers.map(n=>byNum[n]).find(m=>m&&m.status==="installed"&&!state.markers[m.num]?.done);if(next)break}document.getElementById("nextText").textContent=next?`Next loaded marker: #${next.num} — ${next.name}, ${next.town}`:"All loaded routes complete! 🎉";document.getElementById("nextBtn").href=next?url(next):"#";const diff=(state.score.ours||0)-(state.score.theirs||0);document.getElementById("lead").textContent=diff>0?`You lead by ${diff}`:diff<0?`In-laws lead by ${Math.abs(diff)}`:"Tied";let b=[];if(done>=1)b.push("🏅 First Marker");if(done>=25)b.push("🌲 25 Marker Club");if(done>=50)b.push("🚗 50 Marker Club");if(T[0].markers.every(n=>state.markers[n]?.done))b.push("🏛️ Concord Complete");document.getElementById("badges").innerHTML=(b.length?b:["🔒 Keep exploring"]).map(x=>`<span class="badge">${x}</span>`).join("")}renderMap();update();
 if("serviceWorker"in navigator)navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
 </script></body></html>
