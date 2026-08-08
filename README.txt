@@ -1,12 +1,20 @@
-NH Historical Marker Passport v4
-Upload all files to the root of the existing GitHub repo and replace older files.
+NH Historical Marker Passport v5 — Seacoast Expansion
 
-New:
-- 6 total day trips
-- Southern NH routes: Manchester/Merrimack, Derry/Salem, Nashua/Milford
-- 70+ unique marker records loaded
-- status-aware passport (out-for-repair markers are flagged and excluded from route)
-- Quick Trip Planner based on time available and preferred area
-- preserves v2/v3 progress and photo database
+Upload all files to the ROOT of your existing GitHub repository and replace older files.
 
-Apple Maps links use marker title + town search for the new Southern NH markers.
+NEW:
+- 10 total day-trip routes
+- Four Seacoast trips:
+  Day 7 Seacoast South
+  Day 8 Portsmouth Sweep
+  Day 9 Exeter to Durham
+  Day 10 Dover & North Seacoast
+- Portsmouth, Rye, New Castle, Hampton, North Hampton, Seabrook, Greenland,
+  Newington, Exeter, Newfields, Newmarket, Durham, Dover, Rollinsford, Somersworth
+- Exact latitude/longitude Apple Maps destinations wherever verified
+- #92 Hilton's Point is retained in the passport but marked removed for construction and excluded from routes
+- Seacoast added to Quick Trip Planner
+- Keeps the same progress/photo storage as earlier versions
+
+Important:
+Route ordering is a practical geographic collection order. Apple Maps determines the actual road route at driving time.
