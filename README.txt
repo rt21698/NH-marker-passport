@@ -1,16 +1,26 @@
-NH Historical Marker Passport v16.5 — Stable GPS Fix
+NH Historical Marker Passport v17.1 — Condensed Routes
 
-This version was rebuilt from the last known-working v16.3 photo-picker build.
+ROUTE CLEANUP
+- Reduced the route plan from 36 "days" to 29 meaningful regional trips.
+- Removed all four one-marker days.
+- Removed the generic Statewide Cleanup route.
+- Every installed marker is still assigned to at least one trip.
 
-FIX
-- Restores all buttons/tabs/click behavior.
-- Keeps the iPhone Photo Library picker.
-- Marker navigation opens the official NH DHR latitude/longitude as an Apple Maps exact pin using ll=lat,lon.
-- No directions URL, place-name search, Google fallback, or extra navigation JavaScript was added.
-- Once Apple Maps opens on the exact pin, tap Directions and then Go.
-- #281 continues to use the written-location fallback because its published longitude is malformed.
+KEY MERGES
+- Claremont #188 -> Claremont & Cornish
+- Hampton #28 -> Seacoast South
+- Randolph #220 -> Littleton & Lancaster
+- Pelham #176 -> Nashua & Milford
+- Ossipee/Wakefield -> Eastern Lakes & Ossipee
+- Conway/Pinkham Notch -> Notches & Mount Washington Valley
+- Former cleanup markers were folded into Sunapee, Route 4, Haverhill/Northwest,
+  Manchester, Rockingham, Exeter, Seacoast South, and Portsmouth routes.
 
-QUALITY CHECK
-The app JavaScript was syntax-checked before packaging.
+No service worker is included; keep service-worker.js deleted from the GitHub repo while v17 is being stabilized.
 
-Upload all files in this ZIP to the root of the existing GitHub repository and replace the older files.
+Upload:
+index.html
+markers.json
+trips.json
+manifest.json
+README.txt
