@@ -1,16 +1,34 @@
-NH Historical Marker Passport v16.3 — iPhone Photo Picker Fix
+NH Historical Marker Passport v16.4 — Exact Apple Maps Pin Fix
 
-WHY
-The prior version removed the HTML camera-capture attribute, but iOS can still behave differently when a hidden file input is opened by JavaScript.
+WHY THIS PATCH EXISTS
+Recent Apple Maps behavior can change a raw daddr=latitude,longitude directions
+destination to a nearby named place. Turkey Pond #184 exposed the problem even
+though the NH DHR coordinate itself was correct.
 
-FIX
-- The app no longer programmatically clicks the photo input.
-- "Choose Selfie from Photos" is now a native HTML file-picker label tied directly to the image input.
-- No capture/camera attribute exists anywhere in the app.
-- Image types are limited to common photo-library formats.
-- On iPhone, iOS may still display its own system menu. Choose "Photo Library" there.
-- A website cannot force iOS to skip Apple's system picker menu entirely.
+APPLE MAPS FIX
+- "Open Exact Pin" now uses Apple's documented ll=latitude,longitude map-pin format.
+- It does NOT use daddr for coordinate navigation.
+- It does NOT search for the marker title/place.
+- Apple Maps opens the official DHR coordinate as a pin.
+- From that pin, tap Directions and then Go in Apple Maps.
 
-Existing photos, progress, notes, navigation, map, Near Me, and Adventure Mode remain compatible.
+ONE-TAP FALLBACK
+- "GPS Directions" uses Google's universal directions URL with the raw
+  latitude/longitude as the destination.
+- This can open Google Maps if installed, or Google Maps on the web otherwise.
 
-Upload all files from the ZIP to the root of the existing GitHub repository and replace the older files.
+WHY TWO STEPS IN APPLE MAPS?
+Apple's current URL directions handling may snap coordinate destinations to nearby
+mapped entities. Opening an ll coordinate pin avoids that resolution step and preserves
+the exact location.
+
+OTHER FEATURES
+- iPhone Photo Library picker from v16.3 remains included.
+- Adventure Mode, Near Me, statewide map, official DHR data, progress, notes,
+  selfies, favorites, and competition tracking remain compatible.
+- #281 still uses its written-location fallback because the state's published
+  longitude is malformed.
+
+UPLOAD
+Upload all files from this ZIP to the root of your existing GitHub repository and
+replace the older files.
