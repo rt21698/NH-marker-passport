@@ -63,7 +63,7 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Startup Fixed • v17.6</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Aligned NH Map • v17.7</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
@@ -86,12 +86,12 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
       <span class="chip">●✕ Checked — not found</span>
       <span class="chip">▲ Unavailable/retired</span>
     </div>
-    <div class="mapSource">Town/state boundaries: NH DOT / NH GRANIT boundary service.</div>
+    <div class="mapSource">Town/state boundaries: NH DOT / NH GRANIT. Pins use the same geographic extent as the boundary map, so their positions align with the NH outline.</div>
   </div>
   <div class="card" style="padding:8px;overflow:hidden">
-    <svg id="stateMap" viewBox="0 0 360 620" role="img" aria-label="New Hampshire historical marker map">
-      <rect x="0" y="0" width="360" height="620" fill="#f5f7f3"/>
-      <image class="townBoundaryImage" href="https://maps.dot.nh.gov/arcgis_server/rest/services/Boundaries/NHDOT_BOUNDARIES_Towns/MapServer/export?bbox=-72.60,42.68,-70.55,45.31&bboxSR=4326&imageSR=4326&size=720,1240&layers=show:3,4&format=png32&transparent=true&f=image" x="0" y="0" width="360" height="620" preserveAspectRatio="none"/>
+    <svg id="stateMap" viewBox="0 0 360 462" role="img" aria-label="New Hampshire historical marker map">
+      <rect x="0" y="0" width="360" height="462" fill="#f5f7f3"/>
+      <image class="townBoundaryImage" href="https://maps.dot.nh.gov/arcgis_server/rest/services/Boundaries/NHDOT_BOUNDARIES_Towns/MapServer/export?bbox=-72.60,42.68,-70.55,45.31&bboxSR=4326&imageSR=4326&size=720,924&layers=show:3,4&format=png32&transparent=true&f=image" x="0" y="0" width="360" height="462" preserveAspectRatio="none"/>
       <g id="mapPins"></g>
     </svg>
   </div>
@@ -117,7 +117,7 @@ let M=[],T=[],byNum={};
 const KEY="nh-passport-v2";
 let state=JSON.parse(localStorage.getItem(KEY)||"{}");state.markers=state.markers||{};state.score=state.score||{ours:0,theirs:0};
 
-function validGps(m){return Number.isFinite(m.lat)&&Number.isFinite(m.lon)&&m.lat>=42&&m.lat<=46&&m.lon>=-73&&m.lon<=-70}
+function validGps(m){return Number.isFinite(m.lat)&&Number.isFinite(m.lon)&&m.lat>=42.68&&m.lat<=45.31&&m.lon>=-72.60&&m.lon<=-70.55}
 function applePin(m){return validGps(m)?`https://maps.apple.com/?ll=${m.lat},${m.lon}&q=${encodeURIComponent("NH Historical Marker #"+m.num)}`:`https://maps.apple.com/?address=${encodeURIComponent((m.location||m.name)+", "+m.town+", NH")}`}
 
 function displayName(m){
@@ -165,7 +165,10 @@ function updateStats(){renderMap();
 
 function projectNH(lat,lon){
   const minLat=42.68,maxLat=45.31,minLon=-72.60,maxLon=-70.55;
-  return {x:(lon-minLon)/(maxLon-minLon)*360,y:620-(lat-minLat)/(maxLat-minLat)*620};
+  return {
+    x:(lon-minLon)/(maxLon-minLon)*360,
+    y:462-(lat-minLat)/(maxLat-minLat)*462
+  };
 }
 function renderMap(){
   const g=document.getElementById("mapPins"); if(!g) return;

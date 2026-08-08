@@ -1,32 +1,25 @@
-NH Historical Marker Passport v17.6 — STARTUP FIX
+NH Historical Marker Passport v17.7 — MAP ALIGNMENT FIX
 
-IMPORTANT FIX
-v17.4/v17.5 accidentally lost four JavaScript functions during the road-mileage edit:
-- locate()
-- roadMilesFromCurrent()
-- buildAdventure()
-- init()
+WHAT WAS WRONG
+The NH DOT map image requested in v17.5/v17.6 was 720 x 1240 pixels, but the requested
+longitude/latitude bounding box has a very different aspect ratio. ArcGIS adjusted the
+display extent to fit that tall image. The marker projection still used the original
+bbox, which is why many southern markers appeared below New Hampshire.
 
-Because init() was missing, markers.json and trips.json were never loaded. That caused:
-- 0 active markers
-- "Loading..." forever
-- empty Passport/Trips/Map data
-- Near Me and Adventure not functioning
+FIX
+- NH DOT boundary image is now requested at 720 x 924, matching the geographic bbox ratio.
+- SVG map is 360 x 462 with the same ratio.
+- Marker projection uses exactly the same bbox and dimensions as the boundary image.
+- Coordinates outside the NH extent are not drawn as valid map pins.
 
-v17.6 restores those functions and retains:
-- Real NH map with faint town boundaries
-- Different status pin shapes/colors
-- Visited/unvisited/not-found/unavailable markers
-- Selfies on map details
-- Custom marker names
-- Road-network mileage
-- Condensed trips
-- Exact Apple Maps coordinates
-- Not Found tracking
-- Notes, dates, favorites, competition score
+DATA CHECK
+Found 1 malformed/out-of-state coordinate record(s) in the current marker data:
+- #281 THE BROKEN 1713 TREATY OF PORTSMOUTH: lat 43.06094585, lon 43.06094585
+
+All other v17.6 features remain.
 
 Keep service-worker.js deleted.
-Upload all five files:
+Upload:
 index.html
 markers.json
 trips.json
