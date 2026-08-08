@@ -1,6 +1,6 @@
 {
   "name": "NH Historical Marker Passport",
-  "short_name": "NH Markers",
+  "short_name": "NH Passport",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f7f2e7",
@@ -9,7 +9,8 @@
     {
       "src": "icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

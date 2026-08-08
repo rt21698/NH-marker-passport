@@ -1,21 +1,22 @@
-NH Historical Marker Passport — Concord Prototype
+NH Historical Marker Passport — Version 2
 
-FILES
-- index.html: the app
-- manifest.json: lets Safari add it to the Home Screen like an app
-- icon.svg: Home Screen icon
+Upload these files to the ROOT of your existing GitHub repository and replace the older versions when prompted.
 
-WHAT WORKS
-- Concord 13-stop test route
-- completion checkboxes + progress
-- date and notes
-- selfie selection and local browser storage
-- one-tap Apple Maps searches
-- next-stop navigation
+Files:
+index.html
+manifest.json
+icon.svg
+service-worker.js
 
-IMPORTANT
-- Keep original selfies in your Photos library. The app's copies are stored locally in browser storage.
-- This is Version 1. The statewide marker database and fully verified/optimized day routes come next.
+New in v2:
+- Home / Trips / Passport / Competition tabs
+- Continue Adventure button
+- Concord trip route
+- Take/Choose Selfie button
+- Favorites
+- Achievements
+- In-laws scoreboard
+- Offline shell caching
+- Better iPhone home-screen layout
 
-Hosting:
-Upload all three files to a GitHub Pages repository with index.html in the repository root.
+Important: photo copies and progress are local to the browser/device. Keep originals in Photos.
