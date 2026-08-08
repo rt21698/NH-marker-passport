@@ -40,11 +40,19 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 .mapPin.selected{stroke:#111;stroke-width:2.5}
 .mapSelfie{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:13px;margin-top:12px}
 .mapNoPhoto{border:1px dashed var(--line);border-radius:13px;padding:18px;text-align:center;color:var(--muted);margin-top:12px;background:#faf8f1}
+
+.marker.notfound{background:#fff1e8}
+.mapPin.notfound{fill:#b65f36}
+.notFoundBadge{display:inline-block;background:#f3d5c4;color:#7d341a;border-radius:999px;padding:7px 9px;font-size:12px;font-weight:760}
+
+.officialTitle{font-size:12px;color:var(--muted);margin-top:3px}
+.roadMiles{font-size:12px;color:var(--muted);margin-top:3px}
+.routeSummary{background:#f3f6f2;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Interactive Map • v17.2</small></div><div style="font-size:27px">🌲</div></div>
-<div class="stats"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Road Miles + Custom Names • v17.4</small></div><div style="font-size:27px">🌲</div></div>
+<div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
 </nav>
@@ -63,6 +71,7 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
     <div class="chips">
       <span class="chip">● Unvisited</span>
       <span class="chip">✓ Visited</span>
+      <span class="chip">✕ Site checked — marker not found</span>
       <span class="chip">⚠ Unavailable/retired</span>
     </div>
   </div>
@@ -90,12 +99,38 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 </main>
 <script>
 "use strict";
+let currentPos=null;
 let M=[],T=[],byNum={};
 const KEY="nh-passport-v2";
 let state=JSON.parse(localStorage.getItem(KEY)||"{}");state.markers=state.markers||{};state.score=state.score||{ours:0,theirs:0};
 
 function validGps(m){return Number.isFinite(m.lat)&&Number.isFinite(m.lon)&&m.lat>=42&&m.lat<=46&&m.lon>=-73&&m.lon<=-70}
 function applePin(m){return validGps(m)?`https://maps.apple.com/?ll=${m.lat},${m.lon}&q=${encodeURIComponent("NH Historical Marker #"+m.num)}`:`https://maps.apple.com/?address=${encodeURIComponent((m.location||m.name)+", "+m.town+", NH")}`}
+
+function displayName(m){
+  return (state.markers[m.num]?.customName||"").trim() || m.name;
+}
+function officialNameNote(m){
+  const custom=(state.markers[m.num]?.customName||"").trim();
+  return custom?`<div class="officialTitle">Official DHR title: ${m.name}</div>`:"";
+}
+async function roadRouteForMarkers(ms){
+  const good=ms.filter(validGps);
+  if(good.length<2) return null;
+  const coords=good.map(m=>`${m.lon},${m.lat}`).join(";");
+  const endpoint=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false&steps=false`;
+  const r=await fetch(endpoint);
+  if(!r.ok) throw new Error("Routing service unavailable");
+  const data=await r.json();
+  if(data.code!=="Ok"||!data.routes?.[0]) throw new Error("No road route found");
+  return data.routes[0];
+}
+function formatMiles(meters){return (meters/1609.344).toFixed(meters<16093.44?1:0)}
+function formatTime(seconds){
+  const mins=Math.round(seconds/60);
+  return mins<60?`${mins} min`:`${Math.floor(mins/60)} hr ${mins%60} min`;
+}
+
 function miles(a,b,c,d){const R=3958.7613,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));updateStats()}
 
@@ -108,9 +143,9 @@ async function putPhoto(n,f){const d=await db(),tx=d.transaction("photos","readw
 async function delPhoto(n){const d=await db(),tx=d.transaction("photos","readwrite");tx.objectStore("photos").delete(String(n));return new Promise(r=>tx.oncomplete=r)}
 
 function updateStats(){renderMap();
- const active=M.filter(m=>m.status==="installed"),done=active.filter(m=>state.markers[m.num]?.done).length,pics=M.filter(m=>state.markers[m.num]?.hasPhoto).length;
- document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=active.length;document.getElementById("photoN").textContent=pics;document.getElementById("bar").style.width=(active.length?Math.round(done/active.length*100):0)+"%";
- const next=active.find(m=>!state.markers[m.num]?.done);document.getElementById("nextText").textContent=next?`Next unvisited: #${next.num} — ${next.name}, ${next.town}`:"All active markers complete! 🎉";document.getElementById("nextPin").href=next?applePin(next):"#";
+ const active=M.filter(m=>m.status==="installed"),done=active.filter(m=>state.markers[m.num]?.done).length,notfound=active.filter(m=>state.markers[m.num]?.notFound).length,pics=M.filter(m=>state.markers[m.num]?.hasPhoto).length;
+ document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=active.length;document.getElementById("notFoundN").textContent=notfound;document.getElementById("photoN").textContent=pics;document.getElementById("bar").style.width=(active.length?Math.round(done/active.length*100):0)+"%";
+ const next=active.find(m=>!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound);document.getElementById("nextText").textContent=next?`Next unvisited: #${next.num} — ${displayName(next)}, ${next.town}`:"All active markers complete! 🎉";document.getElementById("nextPin").href=next?applePin(next):"#";
  const diff=(state.score.ours||0)-(state.score.theirs||0);document.getElementById("lead").textContent=diff>0?`You lead by ${diff}`:diff<0?`In-laws lead by ${Math.abs(diff)}`:"Tied";
 }
 
@@ -127,10 +162,11 @@ function renderMap(){
     const p=projectNH(m.lat,m.lon);
     const unavailable=m.status!=="installed";
     const visited=!!state.markers[m.num]?.done;
+    const notfound=!!state.markers[m.num]?.notFound;
     const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
     c.setAttribute("cx",p.x); c.setAttribute("cy",p.y);
-    c.setAttribute("r",unavailable?3.8:visited?3.6:2.9);
-    c.setAttribute("class","mapPin "+(unavailable?"unavailable":visited?"visited":"unvisited"));
+    c.setAttribute("r",unavailable?3.8:notfound?3.8:visited?3.6:2.9);
+    c.setAttribute("class","mapPin "+(unavailable?"unavailable":notfound?"notfound":visited?"visited":"unvisited"));
     c.setAttribute("data-marker",m.num);
     c.setAttribute("aria-label",`Marker ${m.num}: ${m.name}`);
     c.addEventListener("click",()=>showMapMarker(m));
@@ -141,17 +177,17 @@ async function showMapMarker(m){
   document.querySelectorAll(".mapPin").forEach(p=>p.classList.remove("selected"));
   document.querySelector(`.mapPin[data-marker="${m.num}"]`)?.classList.add("selected");
   const box=document.getElementById("mapInfo"),s=state.markers[m.num]||{};
-  box.innerHTML=`<h3>#${m.num} — ${m.name}</h3>
+  box.innerHTML=`<h3>#${m.num} — ${displayName(m)}</h3>${officialNameNote(m)}
     <p class="muted">${m.town}, New Hampshire</p>
     <p><strong>Official location:</strong> ${m.location||"Not listed"}</p>
     <div class="chips">
       <span class="chip">${m.status_official||m.status}</span>
-      <span class="chip">${s.done?"✓ Visited":"○ Not visited yet"}</span>
+      <span class="chip">${s.notFound?"✕ Site checked — marker not found":s.done?"✓ Visited":"○ Not visited yet"}</span>
       ${s.date?`<span class="chip">📅 ${s.date}</span>`:""}
       ${s.favorite?`<span class="chip">⭐ Favorite</span>`:""}
     </div>
-    <div id="mapPhotoHolder">${s.done?'<div class="mapNoPhoto">Checking for your saved selfie…</div>':'<div class="mapNoPhoto">No selfie yet — this marker is still on your list.</div>'}</div>
-    <div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="secondary" onclick="openPassportMarker(${m.num})">Open Passport</button></div>`;
+    <div id="mapPhotoHolder">${s.done?'<div class="mapNoPhoto">Checking for your saved selfie…</div>':s.notFound?'<div class="mapNoPhoto">You checked this location, but the marker was not there.</div>':'<div class="mapNoPhoto">No selfie yet — this marker is still on your list.</div>'}</div>
+    <div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="secondary" onclick="openPassportMarker(${m.num})">Open Passport</button>${m.status==="installed"?`<button type="button" class="outline" onclick="toggleNotFound(${m.num})">${s.notFound?"Clear Not Found":"Marker Not Found"}</button>`:""}</div>`;
   if(s.done){
     const holder=document.getElementById("mapPhotoHolder");
     try{
@@ -164,6 +200,16 @@ async function showMapMarker(m){
     }catch(e){holder.innerHTML='<div class="mapNoPhoto">Visited — selfie could not be loaded.</div>'}
   }
 }
+function toggleNotFound(num){
+  const s=state.markers[num]||{};
+  s.notFound=!s.notFound;
+  if(s.notFound) s.done=false;
+  state.markers[num]=s;
+  save();
+  renderPassport();
+  renderMap();
+  showMapMarker(byNum[num]);
+}
 function openPassportMarker(num){
   openView("passport");
   const el=[...document.querySelectorAll(".marker")].find(x=>x.dataset.search?.startsWith(String(num)+" "));
@@ -172,15 +218,18 @@ function openPassportMarker(num){
 
 function renderPassport(){
  const host=document.getElementById("markerHost");host.innerHTML="";
- M.forEach(m=>{const s=state.markers[m.num]||{},d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+(m.status!=="installed"?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();
- d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${m.name}</b><small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span></div><span>${s.favorite?"⭐":"›"}</span></summary>
- <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button></div>
+ M.forEach(m=>{const s=state.markers[m.num]||{},d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+(s.notFound?"notfound ":"")+(m.status!=="installed"?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();
+ d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span>${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
+ <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${m.status==="installed"?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}</div>
+ <label>Custom marker name</label><input class="customName" type="text" placeholder="Optional — your own name for this marker" value="${(s.customName||"").replace(/"/g,"&quot;")}"><div class="muted" style="margin-top:5px">Leave blank to use the official DHR title.</div>
  <label>Date visited</label><input class="date" type="date" value="${s.date||""}">
  <label>Selfie</label><div class="btnrow"><label class="photoPicker" for="photo-${m.num}">Choose from Photos</label><button type="button" class="secondary remove">Remove</button></div><input id="photo-${m.num}" class="file" type="file" accept="image/*" style="position:absolute;left:-10000px;width:1px;height:1px"><img class="photo">
  <label>Notes</label><textarea class="notes">${s.notes||""}</textarea></div>`;
  host.appendChild(d);
- const done=d.querySelector(".done"),date=d.querySelector(".date"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo");
- done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",()=>{state.markers[m.num]={...(state.markers[m.num]||{}),done:done.checked};d.classList.toggle("done",done.checked);save()});
+ const done=d.querySelector(".done"),date=d.querySelector(".date"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
+ done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked)x.notFound=false;state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap()});
+ if(notfoundBtn)notfoundBtn.addEventListener("click",()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap()});
+ customName.addEventListener("change",()=>{state.markers[m.num]={...(state.markers[m.num]||{}),customName:customName.value.trim()};save();renderTrips();renderMap()});
  date.addEventListener("change",()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save()});
  notes.addEventListener("change",()=>{state.markers[m.num]={...(state.markers[m.num]||{}),notes:notes.value};save()});
  fav.addEventListener("click",()=>{const x=state.markers[m.num]||{};x.favorite=!x.favorite;state.markers[m.num]=x;fav.textContent=x.favorite?"★ Favorite":"☆ Favorite";save()});
@@ -189,22 +238,42 @@ function renderPassport(){
  getPhoto(m.num).then(f=>{if(f){img.src=URL.createObjectURL(f);img.style.display="block"}});
  });
 }
-function renderTrips(){const host=document.getElementById("tripHost");host.innerHTML="";T.forEach(t=>{const active=t.markers.map(n=>byNum[n]).filter(m=>m&&m.status==="installed");if(!active.length)return;const c=document.createElement("div");c.className="trip";c.innerHTML=`<h3>${t.name}</h3><p class="muted">${t.subtitle||""}</p><div class="chips"><span class="chip">${active.length} active stops</span></div><div class="routes"></div>`;active.forEach((m,i)=>{const r=document.createElement("div");r.className="route";r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${m.name}</b><div class="muted">${m.town}</div></div><a class="btn secondary" href="${applePin(m)}">Pin</a>`;c.querySelector(".routes").appendChild(r)});host.appendChild(c)})}
-
-function locate(includeVisited){const st=document.getElementById("nearStatus"),out=document.getElementById("nearResults");st.textContent="Getting location…";navigator.geolocation.getCurrentPosition(p=>{const lat=p.coords.latitude,lon=p.coords.longitude;const list=M.filter(m=>m.status==="installed"&&validGps(m)&&(includeVisited||!state.markers[m.num]?.done)).map(m=>({...m,d:miles(lat,lon,m.lat,m.lon)})).sort((a,b)=>a.d-b.d).slice(0,12);st.textContent="Closest markers by straight-line distance. Apple Maps shows the exact official pin.";out.innerHTML=list.map(m=>`<div class="near"><div class="nearTop"><div><div class="muted">#${m.num} • ${m.town}</div><h3>${m.name}</h3></div><div class="distance">${m.d.toFixed(m.d<10?1:0)} mi</div></div><p class="muted">${m.location||""}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a></div></div>`).join("")},()=>{st.textContent="Could not get your location. Check Safari location permission and try again."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000})}
-
-function buildAdventure(){const st=document.getElementById("advStatus"),out=document.getElementById("advResults"),hours=+document.getElementById("advHours").value,radius=+document.getElementById("advRadius").value,limit=hours<=2?6:hours<=4?11:20;st.textContent="Getting location…";navigator.geolocation.getCurrentPosition(p=>{let lat=p.coords.latitude,lon=p.coords.longitude,cands=M.filter(m=>m.status==="installed"&&validGps(m)&&!state.markers[m.num]?.done).map(m=>({...m,startD:miles(lat,lon,m.lat,m.lon)})).filter(m=>m.startD<=radius);const route=[];let cur={lat,lon};while(cands.length&&route.length<limit){cands.sort((a,b)=>miles(cur.lat,cur.lon,a.lat,a.lon)-miles(cur.lat,cur.lon,b.lat,b.lon));const x=cands.shift();x.leg=miles(cur.lat,cur.lon,x.lat,x.lon);route.push(x);cur=x}st.textContent=`Suggested ${route.length} stops.`;out.innerHTML=route.map((m,i)=>`<div class="near"><div class="nearTop"><div><div class="muted">Stop ${i+1} • #${m.num} • ${m.town}</div><h3>${m.name}</h3></div><div class="distance">${m.leg.toFixed(m.leg<10?1:0)} mi</div></div><p class="muted">${m.location||""}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a></div></div>`).join("")},()=>{st.textContent="Could not get location."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000})}
-
-async function init(){
- try{
-  const [mr,tr]=await Promise.all([fetch("./markers.json?v=17",{cache:"no-store"}),fetch("./trips.json?v=17",{cache:"no-store"})]);
-  if(!mr.ok||!tr.ok)throw new Error("data load failed");M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-  renderPassport();renderTrips();renderMap();updateStats();
-  document.getElementById("search").addEventListener("input",e=>{const q=e.target.value.toLowerCase().trim();document.querySelectorAll(".marker").forEach(x=>x.style.display=!q||x.dataset.search.includes(q)?"block":"none")});
-  document.getElementById("nearBtn").addEventListener("click",()=>locate(false));document.getElementById("nearAll").addEventListener("click",()=>locate(true));document.getElementById("advBuild").addEventListener("click",buildAdventure);
-  document.getElementById("ours").value=state.score.ours||0;document.getElementById("theirs").value=state.score.theirs||0;
-  document.getElementById("ours").addEventListener("change",e=>{state.score.ours=+e.target.value||0;save()});document.getElementById("theirs").addEventListener("change",e=>{state.score.theirs=+e.target.value||0;save()});
- }catch(err){console.error(err);document.getElementById("nextText").textContent="App data failed to load. Refresh Safari once."}
+function renderTrips(){
+ const host=document.getElementById("tripHost");host.innerHTML="";
+ T.forEach(t=>{
+   const active=t.markers.map(n=>byNum[n]).filter(m=>m&&m.status==="installed");
+   if(!active.length)return;
+   const c=document.createElement("div");c.className="trip";c.dataset.trip=t.id;
+   c.innerHTML=`<h3>${t.name}</h3><p class="muted">${t.subtitle||""}</p>
+     <div class="chips"><span class="chip">${active.length} active stops</span><span class="chip">Road mileage available</span></div>
+     <div class="btnrow"><button type="button" class="secondary calcRoad">Calculate Road Miles</button></div>
+     <div class="routeSummary" style="display:none"></div><div class="routes"></div>`;
+   active.forEach((m,i)=>{
+     const r=document.createElement("div");r.className="route";r.dataset.idx=i;
+     r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<div class="muted">${m.town}</div><div class="roadMiles"></div></div><a class="btn secondary" href="${applePin(m)}">Pin</a>`;
+     c.querySelector(".routes").appendChild(r)
+   });
+   c.querySelector(".calcRoad").addEventListener("click",async e=>{
+     const btn=e.currentTarget,sum=c.querySelector(".routeSummary");
+     btn.disabled=true;btn.textContent="Calculating…";sum.style.display="block";sum.textContent="Calculating driving route from OpenStreetMap road data…";
+     try{
+       const route=await roadRouteForMarkers(active);
+       if(!route)throw new Error("Not enough GPS points");
+       sum.innerHTML=`<strong>Road route:</strong> ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)} driving`;
+       const legs=route.legs||[];
+       [...c.querySelectorAll(".route")].forEach((row,i)=>{
+         const box=row.querySelector(".roadMiles");
+         if(i===0)box.textContent="Start";
+         else if(legs[i-1])box.textContent=`Road leg from previous stop: ${formatMiles(legs[i-1].distance)} mi • ${formatTime(legs[i-1].duration)}`;
+       });
+       btn.textContent="Refresh Road Miles";
+     }catch(err){
+       sum.textContent="Road-routing service could not calculate this trip right now. Try again later.";
+       btn.textContent="Try Road Miles Again";
+     }finally{btn.disabled=false}
+   });
+   host.appendChild(c)
+ })
 }
 init();
 </script>
