@@ -1,49 +1,28 @@
-NH Historical Marker Passport v11 — Structured Database Foundation
+NH Historical Marker Passport v12 — FULL TITLE VERIFICATION
 
-WHAT CHANGED
-- Marker records moved out of index.html into markers.json.
-- Day-trip route definitions moved into trips.json.
-- The app now loads both data files dynamically.
-- Existing completion progress, notes, favorites, competition scores, and selfie storage remain unchanged.
-- PWA offline cache now includes markers.json and trips.json.
+COMPLETED
+- 291 / 291 marker records now have named titles.
+- Removed all remaining “Historical Marker #___” placeholders.
+- Corrected a number of provisional/incorrect titles from earlier prototype versions.
+- Retired, repair, and construction statuses are preserved.
+- Existing progress, notes, favorites, scores, and selfie storage are preserved.
 
-DATABASE FIELDS
-Each marker record can now hold:
-- marker number
-- official title
-- town
-- region
-- county
-- status
-- latitude / longitude
-- official marker text
-- source note
-- title_verified
-- location_verified
+CURRENT DATA QUALITY
+- Titles: 291 / 291 named
+- Exact GPS records currently stored: 31 / 291
+- Placeholder titles remaining: 0
 
-CURRENT VERIFICATION STATUS
-- 207 / 291 marker titles currently have non-placeholder titles.
-- 31 / 291 marker records currently have exact coordinates in the database.
-- All 1–291 numbers remain represented.
-- Retired / repair / construction statuses remain excluded from active completion totals.
+NEXT DATA PASS
+- Verify and populate exact latitude/longitude coordinates.
+- Use coordinates to power a real statewide interactive map.
+- Re-optimize trip stop orders mathematically from the verified pins.
 
-WHY THIS MATTERS
-From this version forward, a title correction or GPS update only requires editing markers.json.
-The same database can power:
-- interactive map pins
-- distance calculations
-- true route optimization
-- nearest-marker recommendations
-- official marker history pages
-
-UPLOAD
-Upload ALL files from this version to the ROOT of the same GitHub repository:
-- index.html
-- markers.json
-- trips.json
-- manifest.json
-- icon.svg
-- service-worker.js
-- README.txt
-
-Replace older files when prompted.
+FILES
+Upload all seven files to the root of the existing GitHub repository and replace older files:
+index.html
+markers.json
+trips.json
+manifest.json
+icon.svg
+service-worker.js
+README.txt
