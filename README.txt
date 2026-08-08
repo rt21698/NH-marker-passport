@@ -1,23 +1,24 @@
-NH Historical Marker Passport v17.1 — Condensed Routes
+NH Historical Marker Passport v17.2 — Interactive Map
 
-ROUTE CLEANUP
-- Reduced the route plan from 36 "days" to 29 meaningful regional trips.
-- Removed all four one-marker days.
-- Removed the generic Statewide Cleanup route.
-- Every installed marker is still assigned to at least one trip.
+NEW
+- Interactive statewide map restored on the clean v17 codebase.
+- ALL official markers are shown, including unvisited ones.
+- Visited markers, unvisited markers, and unavailable/retired markers are visually different.
+- Tap any marker pin to see:
+  marker number/title
+  town
+  official roadside location
+  installed/repair/retired status
+  visited/not visited status
+  visit date and favorite status if saved
+  exact Apple Maps pin
+- If a visited marker has a saved selfie, the selfie appears directly in the map detail card.
+- Unvisited markers clearly say they are still on your list.
+- Open Passport jumps to that marker's passport entry.
 
-KEY MERGES
-- Claremont #188 -> Claremont & Cornish
-- Hampton #28 -> Seacoast South
-- Randolph #220 -> Littleton & Lancaster
-- Pelham #176 -> Nashua & Milford
-- Ossipee/Wakefield -> Eastern Lakes & Ossipee
-- Conway/Pinkham Notch -> Notches & Mount Washington Valley
-- Former cleanup markers were folded into Sunapee, Route 4, Haverhill/Northwest,
-  Manchester, Rockingham, Exeter, Seacoast South, and Portsmouth routes.
+This version keeps the condensed 29-trip plan from v17.1.
 
-No service worker is included; keep service-worker.js deleted from the GitHub repo while v17 is being stabilized.
-
+No service worker is included; keep service-worker.js deleted while v17 is stabilized.
 Upload:
 index.html
 markers.json

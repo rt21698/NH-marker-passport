@@ -32,13 +32,21 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 .route{display:grid;grid-template-columns:33px 1fr auto;gap:9px;align-items:center;border-top:1px solid #eee8dc;padding:9px 0}.rn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--pine);color:#fff;font-weight:800}
 .nearTop{display:flex;justify-content:space-between;gap:10px}.distance{font-size:22px;font-weight:850;color:var(--pine)}
 .score{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.mapPin{cursor:pointer;stroke:#fff;stroke-width:1.1}
+.mapPin.unvisited{fill:#69746d}
+.mapPin.visited{fill:#2f6b4c}
+.mapPin.unavailable{fill:#c49a3a}
+.mapPin.selected{stroke:#111;stroke-width:2.5}
+.mapSelfie{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:13px;margin-top:12px}
+.mapNoPhoto{border:1px dashed var(--line);border-radius:13px;padding:18px;text-align:center;color:var(--muted);margin-top:12px;background:#faf8f1}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Condensed Routes • v17.1</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Interactive Map • v17.2</small></div><div style="font-size:27px">🌲</div></div>
 <div class="stats"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
-<nav>
-<button class="tab active" data-view="home">Home</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
+<nav style="grid-template-columns:repeat(7,1fr)">
+<button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
 </nav>
 <main class="wrap">
 <section id="home" class="view active">
@@ -47,6 +55,29 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 <div class="card"><h3>Official NH DHR Database</h3><div class="big">291 markers</div><p class="muted">Titles, towns, roadside descriptions, statuses and GPS coordinates come from the official DHR inventory PDFs.</p></div>
 </section>
 
+
+<section id="map" class="view">
+  <div class="card">
+    <h2>Interactive Marker Map</h2>
+    <p class="muted">All official markers are shown: visited, unvisited, and unavailable. Tap any pin for details.</p>
+    <div class="chips">
+      <span class="chip">● Unvisited</span>
+      <span class="chip">✓ Visited</span>
+      <span class="chip">⚠ Unavailable/retired</span>
+    </div>
+  </div>
+  <div class="card" style="padding:8px;overflow:hidden">
+    <svg id="stateMap" viewBox="0 0 360 620" role="img" aria-label="New Hampshire historical marker map" style="width:100%;height:auto;background:#eef3ed;border-radius:14px">
+      <path d="M137 18 L220 22 L232 95 L254 136 L250 190 L275 254 L261 316 L291 375 L272 432 L301 492 L286 585 L107 591 L96 529 L79 482 L89 414 L72 358 L88 296 L79 244 L102 187 L101 128 L123 82 Z"
+        fill="#f7f2e7" stroke="#7d8d83" stroke-width="2"/>
+      <g id="mapPins"></g>
+    </svg>
+  </div>
+  <div id="mapInfo" class="card">
+    <h3>Tap a marker pin</h3>
+    <p class="muted">Visited markers show your saved selfie. Unvisited markers show their official details and navigation pin.</p>
+  </div>
+</section>
 <section id="nearby" class="view"><div class="card"><h2>Markers Near Me</h2><p class="muted">Find the closest installed markers you have not visited.</p><div class="btnrow"><button id="nearBtn">Use My Location</button><button id="nearAll" class="secondary">Include Visited</button></div><p id="nearStatus" class="muted"></p></div><div id="nearResults"></div></section>
 
 <section id="trips" class="view"><div class="card"><h2>Day Trips</h2><p class="muted">29 condensed regional trips. The one-stop and tiny routes have been folded into nearby collection days. Tap any stop to open its exact official GPS pin.</p></div><div id="tripHost"></div></section>
@@ -76,11 +107,67 @@ async function getPhoto(n){const d=await db(),tx=d.transaction("photos","readonl
 async function putPhoto(n,f){const d=await db(),tx=d.transaction("photos","readwrite");tx.objectStore("photos").put(f,String(n));return new Promise(r=>tx.oncomplete=r)}
 async function delPhoto(n){const d=await db(),tx=d.transaction("photos","readwrite");tx.objectStore("photos").delete(String(n));return new Promise(r=>tx.oncomplete=r)}
 
-function updateStats(){
+function updateStats(){renderMap();
  const active=M.filter(m=>m.status==="installed"),done=active.filter(m=>state.markers[m.num]?.done).length,pics=M.filter(m=>state.markers[m.num]?.hasPhoto).length;
  document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=active.length;document.getElementById("photoN").textContent=pics;document.getElementById("bar").style.width=(active.length?Math.round(done/active.length*100):0)+"%";
  const next=active.find(m=>!state.markers[m.num]?.done);document.getElementById("nextText").textContent=next?`Next unvisited: #${next.num} — ${next.name}, ${next.town}`:"All active markers complete! 🎉";document.getElementById("nextPin").href=next?applePin(next):"#";
  const diff=(state.score.ours||0)-(state.score.theirs||0);document.getElementById("lead").textContent=diff>0?`You lead by ${diff}`:diff<0?`In-laws lead by ${Math.abs(diff)}`:"Tied";
+}
+
+
+function projectNH(lat,lon){
+  const minLat=42.68,maxLat=45.31,minLon=-72.60,maxLon=-70.55;
+  return {x:45+(lon-minLon)/(maxLon-minLon)*270,y:590-(lat-minLat)/(maxLat-minLat)*560};
+}
+function renderMap(){
+  const g=document.getElementById("mapPins"); if(!g) return;
+  g.innerHTML="";
+  M.forEach(m=>{
+    if(!validGps(m)) return;
+    const p=projectNH(m.lat,m.lon);
+    const unavailable=m.status!=="installed";
+    const visited=!!state.markers[m.num]?.done;
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",p.x); c.setAttribute("cy",p.y);
+    c.setAttribute("r",unavailable?3.8:visited?3.6:2.9);
+    c.setAttribute("class","mapPin "+(unavailable?"unavailable":visited?"visited":"unvisited"));
+    c.setAttribute("data-marker",m.num);
+    c.setAttribute("aria-label",`Marker ${m.num}: ${m.name}`);
+    c.addEventListener("click",()=>showMapMarker(m));
+    g.appendChild(c);
+  });
+}
+async function showMapMarker(m){
+  document.querySelectorAll(".mapPin").forEach(p=>p.classList.remove("selected"));
+  document.querySelector(`.mapPin[data-marker="${m.num}"]`)?.classList.add("selected");
+  const box=document.getElementById("mapInfo"),s=state.markers[m.num]||{};
+  box.innerHTML=`<h3>#${m.num} — ${m.name}</h3>
+    <p class="muted">${m.town}, New Hampshire</p>
+    <p><strong>Official location:</strong> ${m.location||"Not listed"}</p>
+    <div class="chips">
+      <span class="chip">${m.status_official||m.status}</span>
+      <span class="chip">${s.done?"✓ Visited":"○ Not visited yet"}</span>
+      ${s.date?`<span class="chip">📅 ${s.date}</span>`:""}
+      ${s.favorite?`<span class="chip">⭐ Favorite</span>`:""}
+    </div>
+    <div id="mapPhotoHolder">${s.done?'<div class="mapNoPhoto">Checking for your saved selfie…</div>':'<div class="mapNoPhoto">No selfie yet — this marker is still on your list.</div>'}</div>
+    <div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="secondary" onclick="openPassportMarker(${m.num})">Open Passport</button></div>`;
+  if(s.done){
+    const holder=document.getElementById("mapPhotoHolder");
+    try{
+      const f=await getPhoto(m.num);
+      if(f){
+        const img=document.createElement("img");
+        img.className="mapSelfie"; img.alt=`Your selfie at marker ${m.num}`; img.src=URL.createObjectURL(f);
+        holder.innerHTML=""; holder.appendChild(img);
+      }else holder.innerHTML='<div class="mapNoPhoto">Visited — no selfie uploaded yet.</div>';
+    }catch(e){holder.innerHTML='<div class="mapNoPhoto">Visited — selfie could not be loaded.</div>'}
+  }
+}
+function openPassportMarker(num){
+  openView("passport");
+  const el=[...document.querySelectorAll(".marker")].find(x=>x.dataset.search?.startsWith(String(num)+" "));
+  if(el){el.open=true;setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),100)}
 }
 
 function renderPassport(){
@@ -112,7 +199,7 @@ async function init(){
  try{
   const [mr,tr]=await Promise.all([fetch("./markers.json?v=17",{cache:"no-store"}),fetch("./trips.json?v=17",{cache:"no-store"})]);
   if(!mr.ok||!tr.ok)throw new Error("data load failed");M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-  renderPassport();renderTrips();updateStats();
+  renderPassport();renderTrips();renderMap();updateStats();
   document.getElementById("search").addEventListener("input",e=>{const q=e.target.value.toLowerCase().trim();document.querySelectorAll(".marker").forEach(x=>x.style.display=!q||x.dataset.search.includes(q)?"block":"none")});
   document.getElementById("nearBtn").addEventListener("click",()=>locate(false));document.getElementById("nearAll").addEventListener("click",()=>locate(true));document.getElementById("advBuild").addEventListener("click",buildAdventure);
   document.getElementById("ours").value=state.score.ours||0;document.getElementById("theirs").value=state.score.theirs||0;
