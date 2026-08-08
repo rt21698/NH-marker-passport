@@ -1,30 +1,19 @@
-NH Historical Marker Passport v15 — Near Me
+NH Historical Marker Passport v16.1 — Exact GPS Navigation Fix
 
-NEW
-- "Near Me" tab for iPhone/browser geolocation.
-- Finds the 12 closest installed markers using the official NH DHR GPS coordinates.
-- Default view excludes markers you already completed.
-- Optional "Include Visited" mode.
-- Straight-line distance estimate displayed for each nearby marker.
-- One-tap Apple Maps navigation.
-- One-tap jump to the marker's passport record.
-- Quick "Mark visited" button.
-- Home screen now includes a Find Nearby Markers shortcut.
+WHY THIS PATCH EXISTS
+Apple Maps was resolving some navigation links by marker/place name instead of strictly using the official NH DHR coordinate.
+Turkey Pond (#184) exposed the issue: the DHR coordinate was correct, but Apple Maps navigated toward Turkey Pond itself rather than the roadside marker.
 
-PRIVACY
-The app does not send your current location to a server.
-Browser geolocation is used locally in JavaScript to calculate distance to the official marker coordinates.
+FIX
+- Valid markers now send Apple Maps ONLY the raw latitude/longitude as the destination.
+- Marker title/name is no longer included in the directions URL.
+- Added a separate "View Exact Pin" button so you can inspect the raw coordinate before starting navigation.
+- The malformed official coordinate for #281 still falls back to the official written location instead of using bad GPS data.
+- Existing progress, selfies, notes, favorites, scores, Near Me, Map, and Adventure Mode remain compatible.
 
-IPHONE
-When you first tap Use My Location, Safari may ask for permission.
-Choose Allow. If denied previously, adjust the website/Safari Location setting in iOS and retry.
+RECOMMENDED WORKFLOW
+1. Tap View Exact Pin to sanity-check the roadside location.
+2. Tap Navigate Exact GPS to start Apple Maps directions to the raw DHR coordinate.
 
-ROUTING
-Displayed nearby mileage is straight-line distance, not driving mileage.
-Apple Maps remains the source for actual road directions and drive time.
-
-DATA
-Official marker inventory remains the NH DHR dataset imported in v13.
-Marker #281 continues to use written-location fallback because the official PDF has a malformed west coordinate.
-
-Upload all files from the ZIP to the root of the existing GitHub repository and replace older files.
+UPLOAD
+Upload all files from this ZIP to the root of the existing GitHub repository and replace older files.
