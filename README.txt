@@ -1,15 +1,12 @@
-NH Historical Marker Passport v3
+NH Historical Marker Passport v4
+Upload all files to the root of the existing GitHub repo and replace older files.
 
-Upload all files to the ROOT of the existing GitHub repository, replacing existing files.
+New:
+- 6 total day trips
+- Southern NH routes: Manchester/Merrimack, Derry/Salem, Nashua/Milford
+- 70+ unique marker records loaded
+- status-aware passport (out-for-repair markers are flagged and excluded from route)
+- Quick Trip Planner based on time available and preferred area
+- preserves v2/v3 progress and photo database
 
-NEW:
-- 3 usable day trips
-- Concord + Monadnock West + Monadnock East
-- 45 unique loaded markers (one Keene marker is shared as an East-loop start anchor)
-- exact lat/lon Apple Maps driving destinations
-- searchable passport
-- shared completion status across routes
-- preserves v2 progress by keeping the same localStorage key
-- selfie storage continues in the same IndexedDB database
-
-Route orders are coordinate-optimized approximations. Apple Maps controls real road navigation.
+Apple Maps links use marker title + town search for the new Southern NH markers.
