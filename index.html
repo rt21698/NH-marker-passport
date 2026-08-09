@@ -102,7 +102,7 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Live Family Challenge • v19</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Shared Selfie Sync • v19.1</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
@@ -186,6 +186,12 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
     <label for="teamSelect">Team</label>
     <select id="teamSelect"></select>
     <p class="muted">Use this if you ever need to switch which couple this phone belongs to.</p>
+  </div>
+  <div class="card">
+    <h3>Shared Selfies 📸</h3>
+    <p class="muted">Upload the selfies already saved on this iPhone to your team's shared Supabase storage. Photos that are already in the cloud are skipped.</p>
+    <div class="btnrow"><button id="syncExistingSelfiesBtn" type="button">Sync Existing Selfies to Cloud</button></div>
+    <p id="selfieSyncStatus" class="muted" aria-live="polite"></p>
   </div>
   <div class="card">
     <h3>Recent Activity</h3>
@@ -285,6 +291,34 @@ async function migrateLocalPhotos(){
   if(!sb||!currentTeamId)return {uploaded:0,failed:0};let uploaded=0,failed=0;
   for(const m of M){try{const f=await getPhoto(m.num);if(f&&!sharedPhotoUrl(currentTeamId,m.num)){await uploadSharedPhoto(m.num,f);uploaded++}}catch(e){console.error("Photo migration",m.num,e);failed++}}
   return {uploaded,failed};
+}
+
+async function runExistingSelfieSync(){
+  const btn=document.getElementById("syncExistingSelfiesBtn"),status=document.getElementById("selfieSyncStatus");
+  if(!sb||!currentTeamId){
+    if(status)status.textContent="Live sync is not connected yet.";
+    return;
+  }
+  if(btn){btn.disabled=true;btn.textContent="Syncing selfies…"}
+  if(status)status.textContent="Scanning this iPhone for saved selfies. Keep this page open while they upload…";
+  setSyncState("waiting","Syncing selfies…");
+  try{
+    const result=await migrateLocalPhotos();
+    if(status){
+      if(result.uploaded===0&&result.failed===0) status.textContent="Everything on this iPhone is already synced. ✓";
+      else if(result.failed===0) status.textContent=`Done! ${result.uploaded} existing selfie${result.uploaded===1?"":"s"} uploaded to the shared challenge. ✓`;
+      else status.textContent=`Finished: ${result.uploaded} uploaded, ${result.failed} could not upload. You can tap the button again to retry the failed ones.`;
+    }
+    setSyncState(result.failed?"error":"live",result.failed?"Some photos need retry":"Live sync");
+    await refreshShared();
+    renderMap();
+  }catch(e){
+    console.error("Existing selfie sync",e);
+    if(status)status.textContent="The selfie sync stopped: "+e.message;
+    setSyncState("error","Photo sync error");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Sync Existing Selfies to Cloud"}
+  }
 }
 
 
@@ -799,6 +833,7 @@ async function init(){
    document.getElementById("mapTeamView")?.addEventListener("change",renderMap);
    document.getElementById("importLocalBtn")?.addEventListener("click",importLocalProgress);
    document.getElementById("dismissImportBtn")?.addEventListener("click",()=>{if(currentTeamId)localStorage.setItem("nh-import-dismissed-"+currentTeamId,"yes");document.getElementById("importBanner").style.display="none"});
+   document.getElementById("syncExistingSelfiesBtn")?.addEventListener("click",runExistingSelfieSync);
 }catch(err){
    console.error(err);
    document.getElementById("nextText").textContent="App data failed to load. Make sure markers.json and trips.json were uploaded with index.html, then refresh Safari.";
