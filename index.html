@@ -133,7 +133,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Team Passport • v20.4</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Keep Marker Open • v20.5</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -296,7 +296,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.4";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.5";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -332,7 +332,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","20.4");
+    u.searchParams.set("v","20.5");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -495,7 +495,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v20.4"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v20.5"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -539,11 +539,13 @@ async function chooseTeam(id){
 }
 async function refreshShared(){
   if(!sb)return;
+  const scrollY=window.scrollY;
   const {data,error}=await sb.from("marker_progress").select("*");
   if(error)throw error;
   sharedRows=data||[];
   if(currentTeamId)hydrateCurrentTeamFromShared();
   renderAllShared();
+  requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:"auto"}));
 }
 function hydrateCurrentTeamFromShared(){
   if(!currentTeamId)return;
@@ -928,7 +930,9 @@ function applyPassportFilters(){
 function renderPassport(){
  const teamLabel=document.getElementById("passportTeamLabel");
  if(teamLabel)teamLabel.textContent=currentTeam()?.name||"this team";
- const host=document.getElementById("markerHost");host.innerHTML="";
+ const host=document.getElementById("markerHost");
+ const openMarkers=new Set([...host.querySelectorAll("details.marker[open]")].map(x=>Number(x.dataset.num)));
+ host.innerHTML="";
  M.forEach(m=>{const s=passportTeamState(m.num),d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+(s.notFound?"notfound ":"")+(m.status!=="installed"?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();d.dataset.num=m.num;
  d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span>${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
  <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${m.status==="installed"?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}</div>
@@ -937,6 +941,7 @@ function renderPassport(){
  <label>Selfie</label><div class="btnrow"><label class="photoPicker" for="photo-${m.num}">Choose from Photos</label><button type="button" class="secondary remove">Remove</button></div><input id="photo-${m.num}" class="file" type="file" accept="image/*" style="position:absolute;left:-10000px;width:1px;height:1px"><img class="photo">
  <label>Notes</label><textarea class="notes">${s.notes||""}</textarea></div>`;
  host.appendChild(d);
+ if(openMarkers.has(Number(m.num))) d.open=true;
  const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
  done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked){x.notFound=false;const now=new Date();if(!x.date)x.date=now.toISOString().slice(0,10);if(!x.visitTime)x.visitTime=now.toTimeString().slice(0,5)}state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();renderTrips();renderHomeDashboard();await syncMarker(m.num)});
  if(notfoundBtn)notfoundBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap();await syncMarker(m.num)});
@@ -1169,8 +1174,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=20.4",{cache:"no-store"}),
-     fetch("./trips.json?v=20.4",{cache:"no-store"})
+     fetch("./markers.json?v=20.5",{cache:"no-store"}),
+     fetch("./trips.json?v=20.5",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
