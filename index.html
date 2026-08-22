@@ -123,10 +123,17 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .routeBadge{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#fff;font-weight:900}
 .tripControls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:520px){.routeHuntGrid,.tripControls{grid-template-columns:1fr}.homeScore{grid-template-columns:1fr 1fr}.homeVs{display:none}}
+
+.tripStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.tripStat{background:#f3f6f2;border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center}
+.tripStat b{display:block;font-size:18px;color:var(--pine)}
+.tripStat span{font-size:11px;color:var(--muted)}
+.tripCalcNote{font-size:12px;color:var(--muted);margin-top:6px}
+@media(max-width:480px){.tripStats{grid-template-columns:1fr 1fr}.tripStats .tripStat:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Adventure Dashboard • v20.1</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Passport Filters • v20.3</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -246,7 +253,15 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 
 <section id="adventure" class="view"><div class="card"><h2>Custom Adventure</h2><label>Time</label><select id="advHours"><option value="2">About 2 hours</option><option value="4" selected>About 4 hours</option><option value="8">All day</option></select><label>Radius</label><select id="advRadius"><option value="25">25 miles</option><option value="50" selected>50 miles</option><option value="100">100 miles</option><option value="999">Anywhere in NH</option></select><div class="btnrow"><button id="advBuild">Build Adventure</button></div><p id="advStatus" class="muted"></p></div><div id="advResults"></div></section>
 
-<section id="passport" class="view"><div class="card"><h2>Marker Passport</h2><p class="muted">Choose a selfie from Photos. It uploads to the shared family challenge so both teams can see it.</p><input id="search" class="search" placeholder="Search number, title, or town"></div><div id="markerHost"></div></section>
+<section id="passport" class="view"><div class="card"><h2>Marker Passport</h2><p class="muted">Choose a selfie from Photos. It uploads to the shared family challenge so both teams can see it.</p>
+<label for="passportFilter">Show markers</label>
+<select id="passportFilter">
+  <option value="all">All markers</option>
+  <option value="unvisited">Unvisited only</option>
+  <option value="visited">Visited only</option>
+  <option value="notfound">Site checked — marker not found</option>
+</select>
+<label for="search">Search</label><input id="search" class="search" placeholder="Search number, title, or town"></div><div id="markerHost"></div></section>
 
 <section id="race" class="view">
   <div class="card">
@@ -281,7 +296,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.1";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.3";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -317,7 +332,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","20.1");
+    u.searchParams.set("v","20.3");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -480,7 +495,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v20.1"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v20.3"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -868,9 +883,25 @@ function openPassportMarker(num){
   if(el){el.open=true;setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),100)}
 }
 
+
+function applyPassportFilters(){
+  const q=(document.getElementById("search")?.value||"").toLowerCase().trim();
+  const filter=document.getElementById("passportFilter")?.value||"all";
+  document.querySelectorAll(".marker").forEach(x=>{
+    const num=Number(x.dataset.num),s=state.markers[num]||{};
+    const matchesSearch=!q||x.dataset.search.includes(q);
+    const matchesStatus=
+      filter==="all"||
+      (filter==="visited"&&!!s.done)||
+      (filter==="unvisited"&&!s.done&&!s.notFound)||
+      (filter==="notfound"&&!!s.notFound);
+    x.style.display=matchesSearch&&matchesStatus?"block":"none";
+  });
+}
+
 function renderPassport(){
  const host=document.getElementById("markerHost");host.innerHTML="";
- M.forEach(m=>{const s=state.markers[m.num]||{},d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+(s.notFound?"notfound ":"")+(m.status!=="installed"?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();
+ M.forEach(m=>{const s=state.markers[m.num]||{},d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+(s.notFound?"notfound ":"")+(m.status!=="installed"?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();d.dataset.num=m.num;
  d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span>${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
  <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${m.status==="installed"?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}</div>
  <label>Custom marker name</label><input class="customName" type="text" placeholder="Optional — your own name for this marker" value="${(s.customName||"").replace(/"/g,"&quot;")}"><div class="muted" style="margin-top:5px">Leave blank to use the official DHR title.</div>
@@ -890,6 +921,7 @@ function renderPassport(){
  d.querySelector(".remove").addEventListener("click",async()=>{try{await delPhoto(m.num);await removeSharedPhoto(m.num);img.style.display="none";img.removeAttribute("src");renderMap()}catch(e){alert("Could not remove selfie: "+e.message)}});
  const remote=sharedPhotoUrl(currentTeamId,m.num);if(remote){img.src=remote;img.style.display="block"}else getPhoto(m.num).then(f=>{if(f){img.src=URL.createObjectURL(f);img.style.display="block"}});
  });
+ applyPassportFilters();
 }
 function smartTripGroups(){
   const target=Number(document.getElementById("tripSize")?.value||10);
@@ -906,29 +938,68 @@ function smartTripGroups(){
   }
   return groups;
 }
+function estimateAdventureSeconds(drivingSeconds,markerCount){
+  return drivingSeconds + markerCount*8*60;
+}
+async function fillTripRoadStats(card,markers){
+  const milesEl=card.querySelector(".tripMiles"),driveEl=card.querySelector(".tripDrive"),totalEl=card.querySelector(".tripTotal"),note=card.querySelector(".tripCalcNote");
+  try{
+    const route=await roadRouteForMarkers(markers);
+    if(!route)throw new Error("No route");
+    milesEl.textContent=`${formatMiles(route.distance)} mi`;
+    driveEl.textContent=formatTime(route.duration);
+    totalEl.textContent=formatTime(estimateAdventureSeconds(route.duration,markers.length));
+    note.textContent="Estimated adventure time includes about 8 minutes at each marker.";
+  }catch(e){
+    milesEl.textContent="—";
+    driveEl.textContent="—";
+    totalEl.textContent="—";
+    note.textContent="Road estimate unavailable right now. Tap Refresh Route to try again.";
+  }
+}
+async function queueTripCalculations(cards){
+  const queue=[...cards];
+  const worker=async()=>{
+    while(queue.length){
+      const {card,markers}=queue.shift();
+      await fillTripRoadStats(card,markers);
+    }
+  };
+  await Promise.all([worker(),worker()]);
+}
 function renderTrips(){
  const host=document.getElementById("tripHost");if(!host)return;host.innerHTML="";
  const groups=smartTripGroups(),remaining=groups.reduce((n,g)=>n+g.length,0);
- const summary=document.getElementById("tripSummary");if(summary)summary.textContent=`${remaining} unvisited active markers reorganized into ${groups.length} day trip${groups.length===1?"":"s"}. Rebuild anytime after a marker run.`;
+ const summary=document.getElementById("tripSummary");if(summary)summary.textContent=`${remaining} unvisited active markers reorganized into ${groups.length} day trip${groups.length===1?"":"s"}. Mileage and times calculate automatically.`;
+ const calcQueue=[];
  groups.forEach((active,gi)=>{
    const towns=[...new Set(active.map(m=>m.town))];
    const c=document.createElement("div");c.className="trip";
-   c.innerHTML=`<h3>Day ${gi+1} — ${towns.slice(0,3).join(" • ")}${towns.length>3?" + more":""}</h3><p class="muted">${active.length} remaining markers • dynamically rebuilt from what you still need</p>
-     <div class="btnrow"><button type="button" class="secondary calcRoad">Calculate Road Miles</button></div>
-     <div class="routeSummary" style="display:none"></div><div class="routes"></div>`;
+   c.innerHTML=`<h3>Day ${gi+1} — ${towns.slice(0,3).join(" • ")}${towns.length>3?" + more":""}</h3>
+     <p class="muted">${active.length} remaining marker${active.length===1?"":"s"} • dynamically rebuilt from what you still need</p>
+     <div class="tripStats">
+       <div class="tripStat"><b class="tripMiles">Calculating…</b><span>road miles</span></div>
+       <div class="tripStat"><b class="tripDrive">Calculating…</b><span>driving time</span></div>
+       <div class="tripStat"><b class="tripTotal">Calculating…</b><span>estimated adventure</span></div>
+     </div>
+     <div class="tripCalcNote">Calculating actual road route…</div>
+     <div class="btnrow"><button type="button" class="secondary calcRoad">Refresh Route</button></div>
+     <div class="routes"></div>`;
    active.forEach((m,i)=>{
      const r=document.createElement("div");r.className="route";
-     r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${displayName(m)}</b><div class="muted">${m.town}</div><div class="roadMiles"></div></div><a class="btn secondary" href="${applePin(m)}">Pin</a>`;
+     r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${displayName(m)}</b><div class="muted">${m.town}</div></div><a class="btn secondary" href="${applePin(m)}">Pin</a>`;
      c.querySelector(".routes").appendChild(r);
    });
    c.querySelector(".calcRoad").addEventListener("click",async e=>{
-     const btn=e.currentTarget,sum=c.querySelector(".routeSummary");btn.disabled=true;btn.textContent="Calculating…";sum.style.display="block";
-     try{const route=await roadRouteForMarkers(active);if(!route)throw Error("No route");sum.innerHTML=`<strong>Road route:</strong> ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)} driving`;btn.textContent="Refresh Road Miles"}
-     catch(e){sum.textContent="Road-routing service unavailable right now.";btn.textContent="Try Again"}finally{btn.disabled=false}
+     const btn=e.currentTarget;btn.disabled=true;btn.textContent="Refreshing…";
+     await fillTripRoadStats(c,active);
+     btn.disabled=false;btn.textContent="Refresh Route";
    });
    host.appendChild(c);
+   calcQueue.push({card:c,markers:active});
  });
  if(!groups.length)host.innerHTML='<div class="card"><h3>Every active marker is complete! 🎉</h3></div>';
+ queueTripCalculations(calcQueue);
 }
 
 function locate(includeVisited){
@@ -1070,8 +1141,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=20.1",{cache:"no-store"}),
-     fetch("./trips.json?v=20.1",{cache:"no-store"})
+     fetch("./markers.json?v=20.3",{cache:"no-store"}),
+     fetch("./trips.json?v=20.3",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
@@ -1080,10 +1151,8 @@ async function init(){
    try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
    maybeOfferImport();
 
-   document.getElementById("search").addEventListener("input",e=>{
-     const q=e.target.value.toLowerCase().trim();
-     document.querySelectorAll(".marker").forEach(x=>x.style.display=!q||x.dataset.search.includes(q)?"block":"none");
-   });
+   document.getElementById("search").addEventListener("input",applyPassportFilters);
+   document.getElementById("passportFilter")?.addEventListener("change",applyPassportFilters);
    document.getElementById("nearBtn").addEventListener("click",()=>locate(false));
    document.getElementById("nearAll").addEventListener("click",()=>locate(true));
    document.getElementById("advBuild").addEventListener("click",buildAdventure);
