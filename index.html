@@ -99,17 +99,25 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 #teamPickerBox .teamCard{min-height:120px}
 #importBanner{display:none}
 @media(max-width:480px){.scoreboard{grid-template-columns:1fr 1fr}.versus{display:none}.scoreValue{font-size:34px}}
+
+.connectionNotice{display:none;background:#fff3ee;border:1px solid #e6b7a7;border-radius:14px;padding:12px;margin-bottom:12px;color:#6d2e1e}
+.connectionNotice.show{display:block}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Shared Selfie Sync • v19.1</small></div><div style="font-size:27px">🌲</div></div>
-<div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Connection Repair • v19.2</small></div><div style="font-size:27px">🌲</div></div>
+<div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(7,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
 </nav>
 <main class="wrap">
 <section id="home" class="view active">
+<div id="connectionNotice" class="connectionNotice">
+  <strong>Shared sync needs a reconnect.</strong>
+  <div id="connectionDetail" class="muted" style="margin-top:5px"></div>
+  <div class="btnrow"><button id="connectionRetryBtn" type="button">Reconnect Now</button></div>
+</div>
 <div id="importBanner" class="sharedNotice">
   <strong>Bring your existing passport into the live challenge</strong>
   <p id="importText" class="muted" style="margin:6px 0 0"></p>
@@ -200,7 +208,51 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 </section>
 </main>
 <script>
+
 "use strict";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v19.2";
+
+async function removeOldAppWorkersAndCaches(){
+  let changed=false;
+  try{
+    if("serviceWorker" in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        try{
+          if((reg.scope||"").includes(location.hostname)){
+            const ok=await reg.unregister();
+            if(ok)changed=true;
+          }
+        }catch(e){console.warn("Service worker unregister",e)}
+      }
+    }
+  }catch(e){console.warn("Service worker cleanup",e)}
+  try{
+    if("caches" in window){
+      for(const name of await caches.keys()){
+        if(/nh-passport|marker|passport/i.test(name)){
+          try{if(await caches.delete(name))changed=true}catch(e){console.warn("Cache delete",name,e)}
+        }
+      }
+    }
+  }catch(e){console.warn("Cache cleanup",e)}
+  return changed;
+}
+
+async function ensureCleanRuntime(){
+  if(sessionStorage.getItem(OLD_CACHE_CLEANUP_KEY)==="done")return;
+  const hadController=!!navigator.serviceWorker?.controller;
+  const changed=await removeOldAppWorkersAndCaches();
+  sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
+  if(hadController&&changed){
+    const u=new URL(location.href);
+    u.searchParams.set("v","19.2");
+    u.searchParams.set("fresh",Date.now().toString());
+    location.replace(u.toString());
+    await new Promise(()=>{});
+  }
+}
+
 let currentPos=null;
 let M=[],T=[],byNum={};
 const KEY="nh-passport-v2";
@@ -315,7 +367,7 @@ async function runExistingSelfieSync(){
   }catch(e){
     console.error("Existing selfie sync",e);
     if(status)status.textContent="The selfie sync stopped: "+e.message;
-    setSyncState("error","Photo sync error");
+    setSyncState("error","Shared sync offline");
   }finally{
     if(btn){btn.disabled=false;btn.textContent="Sync Existing Selfies to Cloud"}
   }
@@ -323,16 +375,46 @@ async function runExistingSelfieSync(){
 
 
 function setSyncState(kind,text){
-  const chip=document.getElementById("syncChip");if(!chip)return;
-  chip.className="chip "+(kind==="live"?"syncLive":kind==="error"?"syncError":"syncWaiting");
-  chip.textContent=(kind==="live"?"● ":kind==="error"?"● ":"● ")+text;
+  const chip=document.getElementById("syncChip"),reconnect=document.getElementById("reconnectBtn"),notice=document.getElementById("connectionNotice");
+  if(chip){
+    chip.className="chip "+(kind==="live"?"syncLive":kind==="error"?"syncError":"syncWaiting");
+    chip.textContent="● "+text;
+  }
+  const failed=kind==="error";
+  if(reconnect)reconnect.style.display=failed?"inline-flex":"none";
+  if(notice)notice.classList.toggle("show",failed);
 }
-async function initSupabase(){
+
+function explainConnectionError(err){
+  const detail=document.getElementById("connectionDetail");
+  if(detail)detail.textContent=(err&&err.message)?err.message:"The shared database could not be reached.";
+}
+async function reconnectShared(){
+  setSyncState("waiting","Reconnecting…");
+  try{
+    await removeOldAppWorkersAndCaches();
+    await initSupabase(true);
+    setSyncState("live","Live sync");
+    const detail=document.getElementById("connectionDetail");
+    if(detail)detail.textContent="";
+  }catch(e){
+    console.error("Reconnect failed",e);
+    explainConnectionError(e);
+    setSyncState("error","Reconnect failed");
+  }
+}
+
+async function initSupabase(force=false){
   if(!window.supabase?.createClient){setSyncState("error","Local mode");return false}
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
+  realtimeChannel=null;
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+    global:{headers:{"x-client-info":"nh-marker-passport-v19.2"}},
+    auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+  });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
-  if(te)throw te;
-  teams=t||[];
+  if(te){explainConnectionError(te);throw te;}
+  teams=t||[];if(!teams.length)throw new Error("Connected to Supabase, but no teams were returned.");
   populateTeamControls();
   if(!currentTeamId||!teams.some(t=>t.id===currentTeamId)){
     currentTeamId="";
@@ -351,7 +433,7 @@ function populateTeamControls(){
     select.onchange=async()=>{await chooseTeam(select.value)};
   }
   if(picker){
-    picker.innerHTML="";
+    picker.innerHTML="";if(!teams.length){picker.innerHTML='<div class="muted">Teams could not be loaded. Tap Reconnect.</div>';return;}
     teams.forEach(t=>{
       const b=document.createElement("button");b.type="button";b.className="teamCard";
       b.innerHTML=`<b>${t.name}</b><span class="muted">${t.name==="Our Team"?"This is our couple":"This is the in-laws' couple"}</span>`;
@@ -813,6 +895,7 @@ function buildAdventure(){
 
 async function init(){
  try{
+   await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
      fetch("./markers.json?v=19",{cache:"no-store"}),
      fetch("./trips.json?v=19",{cache:"no-store"})
@@ -820,7 +903,7 @@ async function init(){
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
    renderPassport();renderTrips();renderMap();setupMapGestures();updateStats();
-   try{await initSupabase()}catch(e){console.error("Supabase init",e);setSyncState("error","Local mode")}
+   try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
    maybeOfferImport();
 
    document.getElementById("search").addEventListener("input",e=>{
@@ -834,6 +917,8 @@ async function init(){
    document.getElementById("importLocalBtn")?.addEventListener("click",importLocalProgress);
    document.getElementById("dismissImportBtn")?.addEventListener("click",()=>{if(currentTeamId)localStorage.setItem("nh-import-dismissed-"+currentTeamId,"yes");document.getElementById("importBanner").style.display="none"});
    document.getElementById("syncExistingSelfiesBtn")?.addEventListener("click",runExistingSelfieSync);
+   document.getElementById("reconnectBtn")?.addEventListener("click",reconnectShared);
+   document.getElementById("connectionRetryBtn")?.addEventListener("click",reconnectShared);
 }catch(err){
    console.error(err);
    document.getElementById("nextText").textContent="App data failed to load. Make sure markers.json and trips.json were uploaded with index.html, then refresh Safari.";
