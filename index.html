@@ -102,14 +102,35 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 
 .connectionNotice{display:none;background:#fff3ee;border:1px solid #e6b7a7;border-radius:14px;padding:12px;margin-bottom:12px;color:#6d2e1e}
 .connectionNotice.show{display:block}
+
+/* v20 */
+.heroHome{background:linear-gradient(145deg,#173b2a,#285d43);color:#fff;border:0;overflow:hidden;position:relative}
+.heroHome:after{content:"🌲  ⛰️  🌲";position:absolute;right:12px;top:10px;font-size:28px;opacity:.22}
+.heroHome .muted{color:rgba(255,255,255,.78)}
+.homeScore{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-top:14px}
+.homeScoreBox{text-align:center;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:15px;padding:12px}
+.homeScoreBox b{display:block;font-size:34px}
+.homeVs{font-weight:900;opacity:.75}
+.heroAction{background:#fff;color:var(--pine);border-radius:17px;padding:15px;margin-top:13px}
+.heroAction button{width:100%;font-size:16px}
+.homeGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.miniMetric{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}
+.miniMetric b{font-size:24px;display:block}
+.latestMemory img{width:100%;max-height:280px;object-fit:cover;border-radius:14px;margin-top:10px}
+input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(--line);border-radius:11px;padding:10px;background:#fff}
+.routeHuntGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.routeHuntResult{border-top:1px solid #eee8dc;padding:10px 0;display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center}
+.routeBadge{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#fff;font-weight:900}
+.tripControls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.routeHuntGrid,.tripControls{grid-template-columns:1fr}.homeScore{grid-template-columns:1fr 1fr}.homeVs{display:none}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Connection Repair • v19.2</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Adventure Dashboard • v20</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
-<nav style="grid-template-columns:repeat(7,1fr)">
-<button class="tab active" data-view="home">Home</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
+<nav style="grid-template-columns:repeat(8,1fr)">
+<button class="tab active" data-view="home">Home</button><button class="tab" data-view="routehunt">Route</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
 </nav>
 <main class="wrap">
 <section id="home" class="view active">
@@ -123,12 +144,62 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
   <p id="importText" class="muted" style="margin:6px 0 0"></p>
   <div class="btnrow"><button id="importLocalBtn" type="button">Import This Phone's Progress</button><button id="dismissImportBtn" type="button" class="secondary">Not now</button></div>
 </div>
-<div class="notice"><strong>Navigation:</strong> <b>Open Exact Pin</b> opens the official DHR latitude/longitude in Apple Maps. Then tap <b>Directions → Go</b> in Maps. This avoids Apple Maps replacing the coordinate with a nearby named place.</div>
-<div class="card"><h2>Continue Adventure</h2><p id="nextText" class="muted">Loading…</p><div class="btnrow"><a id="nextPin" class="btn" href="#">Open Next Exact Pin</a><button class="secondary" data-open="nearby">Find Nearby</button><button class="outline" data-open="adventure">Build Adventure</button></div></div>
-<div class="card"><h3>Official NH DHR Database</h3><div class="big">291 markers</div><p class="muted">Titles, towns, roadside descriptions, statuses and GPS coordinates come from the official DHR inventory PDFs.</p></div>
+
+<div class="card heroHome">
+  <div class="muted">NEW HAMPSHIRE HISTORICAL MARKER CHALLENGE</div>
+  <h2 style="font-size:28px;margin-top:4px">Adventure Dashboard</h2>
+  <div class="homeScore">
+    <div class="homeScoreBox"><span id="homeMyName">Our Team</span><b id="homeMyScore">0</b><small>visited</small></div>
+    <div class="homeVs">VS</div>
+    <div class="homeScoreBox"><span id="homeOtherName">In-Laws</span><b id="homeOtherScore">0</b><small>visited</small></div>
+  </div>
+  <p id="homeLead" style="font-weight:800;text-align:center;margin-bottom:0">Loading the race…</p>
+  <div class="heroAction">
+    <strong>🚗 Markers Along My Way</strong>
+    <p class="muted" style="margin:5px 0 10px">Turn a drive you already have to make into a marker hunt.</p>
+    <button type="button" data-open="routehunt">Plan a Route</button>
+  </div>
+</div>
+
+<div class="homeGrid">
+  <div class="miniMetric"><span class="muted">Statewide progress</span><b id="homeProgress">0%</b><span id="homeProgressText" class="muted">0 markers</span></div>
+  <div class="miniMetric"><span class="muted">Still waiting</span><b id="homeRemaining">0</b><span class="muted">active markers</span></div>
+</div>
+
+<div class="card">
+  <h3>🌲 Next Adventure</h3>
+  <p id="nextText" class="muted">Loading…</p>
+  <div class="btnrow"><button data-open="trips">Rebuild My Trips</button><button class="secondary" data-open="nearby">Find Nearby</button></div>
+</div>
+
+<div class="card latestMemory">
+  <h3>📸 Latest Memory</h3>
+  <div id="latestMemory"><p class="muted">Your latest visited marker will appear here.</p></div>
+</div>
+
+<div class="notice"><strong>Offline-friendly:</strong> visits, dates, times and selfies are saved on this phone first. When service returns, shared progress can sync without changing the time you actually visited.</div>
 </section>
 
-
+<section id="routehunt" class="view">
+  <div class="card">
+    <h2>🚗 Markers Along My Way</h2>
+    <p class="muted">Enter where you're leaving from and where you're going. The app finds unvisited NH markers close to the actual driving route.</p>
+    <label>Starting point</label>
+    <input id="routeStart" type="text" placeholder="Example: Weare, NH">
+    <div class="btnrow"><button id="routeUseLocation" type="button" class="secondary">Use My Current Location</button></div>
+    <label>Destination</label>
+    <input id="routeEnd" type="text" placeholder="Example: Holyoke Mall, Holyoke, MA">
+    <div class="routeHuntGrid">
+      <div><label>Maximum distance off route</label><select id="routeCorridor"><option value="1">1 mile</option><option value="3" selected>3 miles</option><option value="5">5 miles</option><option value="10">10 miles</option></select></div>
+      <div><label>Maximum marker stops</label><select id="routeLimit"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="25">25</option></select></div>
+    </div>
+    <label>Show markers</label>
+    <select id="routeTeamFilter"><option value="mine">Our team hasn't visited</option><option value="neither">Neither team has visited</option><option value="all">All active markers</option></select>
+    <div class="btnrow"><button id="routeBuild" type="button">Find Markers Along Route</button></div>
+    <p id="routeStatus" class="muted"></p>
+  </div>
+  <div id="routeResults"></div>
+</section>
 <section id="map" class="view">
   <div class="card">
     <h2>Interactive Marker Map</h2>
@@ -171,7 +242,7 @@ textarea{min-height:65px}.photo{display:none;width:100%;max-height:300px;object-
 </section>
 <section id="nearby" class="view"><div class="card"><h2>Markers Near Me</h2><p class="muted">Find the closest installed markers you have not visited.</p><div class="btnrow"><button id="nearBtn">Use My Location</button><button id="nearAll" class="secondary">Include Visited</button></div><p id="nearStatus" class="muted"></p></div><div id="nearResults"></div></section>
 
-<section id="trips" class="view"><div class="card"><h2>Day Trips</h2><p class="muted">29 condensed regional trips. The one-stop and tiny routes have been folded into nearby collection days. Tap any stop to open its exact official GPS pin.</p></div><div id="tripHost"></div></section>
+<section id="trips" class="view"><div class="card"><h2>🌲 Smart Day Trips</h2><p class="muted">Your remaining markers are regrouped into sensible collection days. Completed markers are left out, so tiny leftover days get folded into nearby trips.</p><div class="tripControls"><div><label>Target stops per day</label><select id="tripSize"><option value="8">About 8</option><option value="10" selected>About 10</option><option value="12">About 12</option></select></div><div style="display:flex;align-items:end"><button id="rebuildTrips" type="button" style="width:100%">Rebuild My Trips</button></div></div><p id="tripSummary" class="muted"></p></div><div id="tripHost"></div></section>
 
 <section id="adventure" class="view"><div class="card"><h2>Custom Adventure</h2><label>Time</label><select id="advHours"><option value="2">About 2 hours</option><option value="4" selected>About 4 hours</option><option value="8">All day</option></select><label>Radius</label><select id="advRadius"><option value="25">25 miles</option><option value="50" selected>50 miles</option><option value="100">100 miles</option><option value="999">Anywhere in NH</option></select><div class="btnrow"><button id="advBuild">Build Adventure</button></div><p id="advStatus" class="muted"></p></div><div id="advResults"></div></section>
 
@@ -464,7 +535,7 @@ function hydrateCurrentTeamFromShared(){
     const x=state.markers[r.marker_num]||{};
     x.done=r.status==="visited";
     x.notFound=r.status==="not_found";
-    x.date=r.visited_date||"";
+    x.date=r.visited_date||"";if(r.status==="visited"&&r.updated_at&&r.visited_date){const vd=new Date(r.updated_at);if(!isNaN(vd)&&vd.toISOString().slice(0,10)===r.visited_date)x.visitTime=vd.toTimeString().slice(0,5);}
     x.customName=r.custom_name||"";
     x.notes=r.notes||"";
     x.sharedPhotoUrl=r.photo_url||"";x.hasPhoto=!!r.photo_url||!!x.hasPhoto;
@@ -482,6 +553,28 @@ function subscribeRealtime(){
       else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")setSyncState("error","Sync retrying");
     });
 }
+
+function visitISO(s){
+  if(!s?.date)return null;
+  const time=s.visitTime||"12:00";
+  const d=new Date(`${s.date}T${time}:00`);
+  return isNaN(d)?null:d.toISOString();
+}
+function rowVisitDate(r){
+  if(!r)return null;
+  if(r.status==="visited"&&r.visited_date){
+    const local=state.markers[r.marker_num];
+    if(r.team_id===currentTeamId&&local?.visitTime){
+      const d=new Date(`${r.visited_date}T${local.visitTime}:00`);
+      if(!isNaN(d))return d;
+    }
+    const u=r.updated_at?new Date(r.updated_at):null;
+    if(u&&!isNaN(u)&&u.toISOString().slice(0,10)===r.visited_date)return u;
+    return new Date(`${r.visited_date}T12:00:00`);
+  }
+  return r.updated_at?new Date(r.updated_at):null;
+}
+
 async function syncMarker(num,photoOverride){
   if(!sb||!currentTeamId)return;
   const s=state.markers[num]||{};
@@ -493,7 +586,7 @@ async function syncMarker(num,photoOverride){
     custom_name:(s.customName||"").trim()||null,
     notes:(s.notes||"").trim()||null,
     photo_url:photoOverride!==undefined?photoOverride:(s.sharedPhotoUrl||sharedRow(currentTeamId,num)?.photo_url||null),
-    updated_at:new Date().toISOString()
+    updated_at:(s.done&&visitISO(s))||new Date().toISOString()
   };
   const {error}=await sb.from("marker_progress").upsert(payload,{onConflict:"team_id,marker_num"});
   if(error){console.error(error);setSyncState("error","Sync error");return}
@@ -555,14 +648,13 @@ function renderScoreboard(){
 }
 function renderActivity(){
   const feed=document.getElementById("activityFeed");if(!feed)return;
-  const recent=[...sharedRows].filter(r=>r.updated_at&&r.status!=="unvisited").sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at)).slice(0,12);
-  if(!recent.length){feed.innerHTML='<p class="muted">Waiting for the first shared update…</p>';return}
-  feed.innerHTML=recent.map(r=>{
-    const team=teams.find(t=>t.id===r.team_id),m=byNum[r.marker_num];
-    const mine=r.team_id===currentTeamId;
+  const recent=[...sharedRows].filter(r=>r.status!=="unvisited").map(r=>({r,d:rowVisitDate(r)})).filter(x=>x.d&&!isNaN(x.d)).sort((a,b)=>b.d-a.d).slice(0,12);
+  if(!recent.length){feed.innerHTML='<p class="muted">Waiting for the first shared visit…</p>';return}
+  feed.innerHTML=recent.map(({r,d})=>{
+    const team=teams.find(t=>t.id===r.team_id),m=byNum[r.marker_num],mine=r.team_id===currentTeamId;
     const verb=r.status==="visited"?"visited":"checked but did not find";
-    const when=new Date(r.updated_at).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-    return `<div class="activityItem"><span class="activityDot ${mine?"":"them"}"></span><strong>${team?.name||"Team"}</strong> ${verb} <strong>#${r.marker_num} ${m?displayName(m):""}</strong><div class="muted">${when}</div></div>`;
+    const when=d.toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+    return `<div class="activityItem"><span class="activityDot ${mine?"":"them"}"></span><strong>${team?.name||"Team"}</strong> ${verb} <strong>#${r.marker_num} ${m?displayName(m):""}</strong><div class="muted">${when}${r.status==="visited"?" • visit time":""}</div></div>`;
   }).join("");
 }
 function renderAllShared(){
@@ -570,13 +662,15 @@ function renderAllShared(){
   renderScoreboard();
   renderMap();
   updateStats();
+  renderHomeDashboard();
 }
 
 function updateStats(){renderMap();
  const active=M.filter(m=>m.status==="installed"),done=active.filter(m=>state.markers[m.num]?.done).length,notfound=active.filter(m=>state.markers[m.num]?.notFound).length,pics=M.filter(m=>state.markers[m.num]?.hasPhoto).length;
  document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=active.length;document.getElementById("notFoundN").textContent=notfound;document.getElementById("photoN").textContent=pics;document.getElementById("bar").style.width=(active.length?Math.round(done/active.length*100):0)+"%";
  const next=active.find(m=>!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound);document.getElementById("nextText").textContent=next?`Next unvisited: #${next.num} — ${displayName(next)}, ${next.town}`:"All active markers complete! 🎉";document.getElementById("nextPin").href=next?applePin(next):"#";
- 
+
+ renderHomeDashboard();
 }
 
 
@@ -779,15 +873,16 @@ function renderPassport(){
  d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span>${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
  <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${m.status==="installed"?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}</div>
  <label>Custom marker name</label><input class="customName" type="text" placeholder="Optional — your own name for this marker" value="${(s.customName||"").replace(/"/g,"&quot;")}"><div class="muted" style="margin-top:5px">Leave blank to use the official DHR title.</div>
- <label>Date visited</label><input class="date" type="date" value="${s.date||""}">
+ <label>Date visited</label><input class="date" type="date" value="${s.date||""}"><label>Time visited</label><input class="visitTime" type="time" value="${s.visitTime||""}"><div class="muted" style="margin-top:5px">Enter the real time you were at the marker. This is what Recent Activity uses—not the upload time.</div>
  <label>Selfie</label><div class="btnrow"><label class="photoPicker" for="photo-${m.num}">Choose from Photos</label><button type="button" class="secondary remove">Remove</button></div><input id="photo-${m.num}" class="file" type="file" accept="image/*" style="position:absolute;left:-10000px;width:1px;height:1px"><img class="photo">
  <label>Notes</label><textarea class="notes">${s.notes||""}</textarea></div>`;
  host.appendChild(d);
- const done=d.querySelector(".done"),date=d.querySelector(".date"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
- done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked)x.notFound=false;state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();await syncMarker(m.num)});
+ const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
+ done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked){x.notFound=false;const now=new Date();if(!x.date)x.date=now.toISOString().slice(0,10);if(!x.visitTime)x.visitTime=now.toTimeString().slice(0,5)}state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();renderTrips();renderHomeDashboard();await syncMarker(m.num)});
  if(notfoundBtn)notfoundBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap();await syncMarker(m.num)});
  customName.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),customName:customName.value.trim()};save();renderTrips();renderMap();await syncMarker(m.num)});
- date.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save();await syncMarker(m.num)});
+ date.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
+ visitTime.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),visitTime:visitTime.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
  notes.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),notes:notes.value};save();await syncMarker(m.num)});
  fav.addEventListener("click",()=>{const x=state.markers[m.num]||{};x.favorite=!x.favorite;state.markers[m.num]=x;fav.textContent=x.favorite?"★ Favorite":"☆ Favorite";save()});
  file.addEventListener("change",async()=>{if(file.files&&file.files[0]){const chosen=file.files[0];try{img.style.display="none";setSyncState("waiting","Uploading selfie…");await putPhoto(m.num,chosen);const url=await uploadSharedPhoto(m.num,chosen);img.src=url;img.style.display="block";setSyncState("live","Live sync");renderMap()}catch(e){console.error(e);setSyncState("error","Photo upload failed");alert("Selfie upload failed: "+e.message)}}});
@@ -795,42 +890,44 @@ function renderPassport(){
  const remote=sharedPhotoUrl(currentTeamId,m.num);if(remote){img.src=remote;img.style.display="block"}else getPhoto(m.num).then(f=>{if(f){img.src=URL.createObjectURL(f);img.style.display="block"}});
  });
 }
+function smartTripGroups(){
+  const target=Number(document.getElementById("tripSize")?.value||10);
+  let left=M.filter(m=>m.status==="installed"&&validGps(m)&&!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound);
+  const groups=[];
+  while(left.length){
+    let seed=left.shift(),group=[seed],cur=seed;
+    while(left.length&&group.length<target){
+      let bi=0,bd=Infinity;
+      left.forEach((m,i)=>{const d=miles(cur.lat,cur.lon,m.lat,m.lon);if(d<bd){bd=d;bi=i}});
+      cur=left.splice(bi,1)[0];group.push(cur);
+    }
+    groups.push(group);
+  }
+  return groups;
+}
 function renderTrips(){
- const host=document.getElementById("tripHost");host.innerHTML="";
- T.forEach(t=>{
-   const active=t.markers.map(n=>byNum[n]).filter(m=>m&&m.status==="installed");
-   if(!active.length)return;
-   const c=document.createElement("div");c.className="trip";c.dataset.trip=t.id;
-   c.innerHTML=`<h3>${t.name}</h3><p class="muted">${t.subtitle||""}</p>
-     <div class="chips"><span class="chip">${active.length} active stops</span><span class="chip">Road mileage available</span></div>
+ const host=document.getElementById("tripHost");if(!host)return;host.innerHTML="";
+ const groups=smartTripGroups(),remaining=groups.reduce((n,g)=>n+g.length,0);
+ const summary=document.getElementById("tripSummary");if(summary)summary.textContent=`${remaining} unvisited active markers reorganized into ${groups.length} day trip${groups.length===1?"":"s"}. Rebuild anytime after a marker run.`;
+ groups.forEach((active,gi)=>{
+   const towns=[...new Set(active.map(m=>m.town))];
+   const c=document.createElement("div");c.className="trip";
+   c.innerHTML=`<h3>Day ${gi+1} — ${towns.slice(0,3).join(" • ")}${towns.length>3?" + more":""}</h3><p class="muted">${active.length} remaining markers • dynamically rebuilt from what you still need</p>
      <div class="btnrow"><button type="button" class="secondary calcRoad">Calculate Road Miles</button></div>
      <div class="routeSummary" style="display:none"></div><div class="routes"></div>`;
    active.forEach((m,i)=>{
-     const r=document.createElement("div");r.className="route";r.dataset.idx=i;
-     r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<div class="muted">${m.town}</div><div class="roadMiles"></div></div><a class="btn secondary" href="${applePin(m)}">Pin</a>`;
-     c.querySelector(".routes").appendChild(r)
+     const r=document.createElement("div");r.className="route";
+     r.innerHTML=`<div class="rn">${i+1}</div><div><b>#${m.num} — ${displayName(m)}</b><div class="muted">${m.town}</div><div class="roadMiles"></div></div><a class="btn secondary" href="${applePin(m)}">Pin</a>`;
+     c.querySelector(".routes").appendChild(r);
    });
    c.querySelector(".calcRoad").addEventListener("click",async e=>{
-     const btn=e.currentTarget,sum=c.querySelector(".routeSummary");
-     btn.disabled=true;btn.textContent="Calculating…";sum.style.display="block";sum.textContent="Calculating driving route from OpenStreetMap road data…";
-     try{
-       const route=await roadRouteForMarkers(active);
-       if(!route)throw new Error("Not enough GPS points");
-       sum.innerHTML=`<strong>Road route:</strong> ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)} driving`;
-       const legs=route.legs||[];
-       [...c.querySelectorAll(".route")].forEach((row,i)=>{
-         const box=row.querySelector(".roadMiles");
-         if(i===0)box.textContent="Start";
-         else if(legs[i-1])box.textContent=`Road leg from previous stop: ${formatMiles(legs[i-1].distance)} mi • ${formatTime(legs[i-1].duration)}`;
-       });
-       btn.textContent="Refresh Road Miles";
-     }catch(err){
-       sum.textContent="Road-routing service could not calculate this trip right now. Try again later.";
-       btn.textContent="Try Road Miles Again";
-     }finally{btn.disabled=false}
+     const btn=e.currentTarget,sum=c.querySelector(".routeSummary");btn.disabled=true;btn.textContent="Calculating…";sum.style.display="block";
+     try{const route=await roadRouteForMarkers(active);if(!route)throw Error("No route");sum.innerHTML=`<strong>Road route:</strong> ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)} driving`;btn.textContent="Refresh Road Miles"}
+     catch(e){sum.textContent="Road-routing service unavailable right now.";btn.textContent="Try Again"}finally{btn.disabled=false}
    });
-   host.appendChild(c)
- })
+   host.appendChild(c);
+ });
+ if(!groups.length)host.innerHTML='<div class="card"><h3>Every active marker is complete! 🎉</h3></div>';
 }
 
 function locate(includeVisited){
@@ -893,16 +990,91 @@ function buildAdventure(){
  },()=>{st.textContent="Could not get location."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
 }
 
+
+function distancePointToSegmentMiles(p,a,b){
+  const lat0=(p.lat+a.lat+b.lat)/3*Math.PI/180, sx=Math.cos(lat0)*69.172, sy=69.0;
+  const px=p.lon*sx,py=p.lat*sy,ax=a.lon*sx,ay=a.lat*sy,bx=b.lon*sx,by=b.lat*sy;
+  const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+  let t=l2?((px-ax)*dx+(py-ay)*dy)/l2:0;t=Math.max(0,Math.min(1,t));
+  return {d:Math.hypot(px-(ax+t*dx),py-(ay+t*dy)),t};
+}
+async function geocodePlace(q){
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&q=${encodeURIComponent(q)}`,{headers:{"Accept":"application/json"}});
+  if(!r.ok)throw Error("Could not look up that place.");
+  const x=(await r.json())[0];if(!x)throw Error(`Couldn't find "${q}". Try adding the city and state.`);
+  return {lat:+x.lat,lon:+x.lon,label:x.display_name};
+}
+async function buildRouteHunt(){
+  const status=document.getElementById("routeStatus"),out=document.getElementById("routeResults"),btn=document.getElementById("routeBuild");
+  btn.disabled=true;btn.textContent="Building route…";status.textContent="Finding your driving route…";out.innerHTML="";
+  try{
+    let start;
+    const saved=document.getElementById("routeStart").dataset.coords;
+    if(saved){const [lat,lon]=saved.split(",").map(Number);start={lat,lon,label:"Current location"}}
+    else start=await geocodePlace(document.getElementById("routeStart").value.trim());
+    const end=await geocodePlace(document.getElementById("routeEnd").value.trim());
+    const rr=await fetch(`https://router.project-osrm.org/route/v1/driving/${start.lon},${start.lat};${end.lon},${end.lat}?overview=full&geometries=geojson`);
+    const data=await rr.json(),route=data.routes?.[0];if(!route)throw Error("A driving route could not be calculated.");
+    const line=route.geometry.coordinates.map(([lon,lat])=>({lat,lon}));
+    const corridor=+document.getElementById("routeCorridor").value,limit=+document.getElementById("routeLimit").value,filter=document.getElementById("routeTeamFilter").value;
+    let candidates=M.filter(m=>m.status==="installed"&&validGps(m)).filter(m=>{
+      if(filter==="all")return true;
+      const mine=currentTeamId?sharedStatus(currentTeamId,m.num).done:!!state.markers[m.num]?.done;
+      const them=otherTeam()?sharedStatus(otherTeam().id,m.num).done:false;
+      return filter==="neither"?!mine&&!them:!mine;
+    });
+    const scored=[];
+    for(const m of candidates){
+      let best={d:Infinity,progress:0};
+      for(let i=0;i<line.length-1;i++){
+        const x=distancePointToSegmentMiles(m,line[i],line[i+1]);
+        if(x.d<best.d)best={d:x.d,progress:i+x.t};
+      }
+      if(best.d<=corridor)scored.push({...m,off:best.d,progress:best.progress});
+    }
+    scored.sort((a,b)=>a.progress-b.progress||a.off-b.off);
+    const chosen=scored.slice(0,limit);
+    status.textContent=`Normal drive: ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)}. Found ${scored.length} eligible marker${scored.length===1?"":"s"} within ${corridor} mi of the route.`;
+    if(!chosen.length){out.innerHTML='<div class="card"><h3>No matching markers that close to this route.</h3><p class="muted">Try increasing the off-route distance.</p></div>';return}
+    out.innerHTML=`<div class="card"><h3>${chosen.length} marker${chosen.length===1?"":"s"} worth considering</h3><p class="muted">Ordered from start to destination. “Off route” is distance from the driving path, not added driving time.</p><div id="routeStopList"></div></div>`;
+    document.getElementById("routeStopList").innerHTML=chosen.map((m,i)=>`<div class="routeHuntResult"><div class="routeBadge">${i+1}</div><div><strong>#${m.num} — ${displayName(m)}</strong><div class="muted">${m.town} • about ${m.off<0.1?"on route":m.off.toFixed(1)+" mi off route"}</div></div><a class="btn secondary" href="${applePin(m)}">Pin</a></div>`).join("");
+    localStorage.setItem("nh-last-route-hunt-v20",JSON.stringify({savedAt:new Date().toISOString(),start,end,corridor,markers:chosen.map(m=>m.num)}));
+  }catch(e){status.textContent=e.message||"Route Hunt couldn't build this route."}
+  finally{btn.disabled=false;btn.textContent="Find Markers Along Route"}
+}
+function renderHomeDashboard(){
+  if(!M.length)return;
+  const active=M.filter(m=>m.status==="installed"),done=active.filter(m=>state.markers[m.num]?.done).length,remaining=active.length-done;
+  const mine=currentTeam(),other=otherTeam();
+  const myScore=mine?sharedRows.filter(r=>r.team_id===mine.id&&r.status==="visited").length:done;
+  const otherScore=other?sharedRows.filter(r=>r.team_id===other.id&&r.status==="visited").length:0;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set("homeMyName",mine?.name||"Our Team");set("homeOtherName",other?.name||"In-Laws");set("homeMyScore",myScore);set("homeOtherScore",otherScore);
+  set("homeLead",myScore===otherScore?"It's tied!":myScore>otherScore?`${mine?.name||"Our Team"} leads by ${myScore-otherScore} 🏆`:`${other?.name||"Other Team"} leads by ${otherScore-myScore} 👀`);
+  set("homeProgress",active.length?`${(done/active.length*100).toFixed(1)}%`:"0%");set("homeProgressText",`${done} of ${active.length} active markers`);set("homeRemaining",remaining);
+  renderLatestMemory();
+}
+async function renderLatestMemory(){
+  const box=document.getElementById("latestMemory");if(!box)return;
+  const visited=M.map(m=>({m,s:state.markers[m.num]||{}})).filter(x=>x.s.done&&x.s.date).map(x=>({ ...x, d:new Date(`${x.s.date}T${x.s.visitTime||"12:00"}:00`) })).filter(x=>!isNaN(x.d)).sort((a,b)=>b.d-a.d);
+  if(!visited.length){box.innerHTML='<p class="muted">Your latest visited marker will appear here.</p>';return}
+  const {m,s,d}=visited[0];
+  box.innerHTML=`<strong>#${m.num} — ${displayName(m)}</strong><div class="muted">${m.town}, NH • ${d.toLocaleString([], {month:"long",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"})}</div><div id="latestMemoryPhoto"></div><div class="btnrow"><button class="secondary" type="button" onclick="openPassportMarker(${m.num})">Open Memory</button></div>`;
+  const ph=document.getElementById("latestMemoryPhoto"),remote=sharedPhotoUrl(currentTeamId,m.num);
+  if(remote)ph.innerHTML=`<img src="${remote}" alt="Latest marker selfie">`;
+  else try{const f=await getPhoto(m.num);if(f)ph.innerHTML=`<img src="${URL.createObjectURL(f)}" alt="Latest marker selfie">`}catch(e){}
+}
+
 async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=19",{cache:"no-store"}),
-     fetch("./trips.json?v=19",{cache:"no-store"})
+     fetch("./markers.json?v=20",{cache:"no-store"}),
+     fetch("./trips.json?v=20",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-   renderPassport();renderTrips();renderMap();setupMapGestures();updateStats();
+   renderPassport();renderTrips();renderMap();setupMapGestures();updateStats();renderHomeDashboard();
    try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
    maybeOfferImport();
 
@@ -919,6 +1091,14 @@ async function init(){
    document.getElementById("syncExistingSelfiesBtn")?.addEventListener("click",runExistingSelfieSync);
    document.getElementById("reconnectBtn")?.addEventListener("click",reconnectShared);
    document.getElementById("connectionRetryBtn")?.addEventListener("click",reconnectShared);
+   document.getElementById("rebuildTrips")?.addEventListener("click",renderTrips);
+   document.getElementById("tripSize")?.addEventListener("change",renderTrips);
+   document.getElementById("routeBuild")?.addEventListener("click",buildRouteHunt);
+   document.getElementById("routeUseLocation")?.addEventListener("click",()=>{
+     const st=document.getElementById("routeStatus");st.textContent="Getting your location…";
+     navigator.geolocation.getCurrentPosition(p=>{const el=document.getElementById("routeStart");el.value="Current location";el.dataset.coords=`${p.coords.latitude},${p.coords.longitude}`;st.textContent="Current location ready.";},()=>{st.textContent="Could not get your location. You can type the starting point instead.";},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
+   });
+   document.getElementById("routeStart")?.addEventListener("input",e=>{if(e.target.value!=="Current location")delete e.target.dataset.coords});
 }catch(err){
    console.error(err);
    document.getElementById("nextText").textContent="App data failed to load. Make sure markers.json and trips.json were uploaded with index.html, then refresh Safari.";
