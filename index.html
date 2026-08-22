@@ -130,10 +130,24 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .tripStat span{font-size:11px;color:var(--muted)}
 .tripCalcNote{font-size:12px;color:var(--muted);margin-top:6px}
 @media(max-width:480px){.tripStats{grid-template-columns:1fr 1fr}.tripStats .tripStat:last-child{grid-column:1/-1}}
+
+/* v20.7 custom time picker */
+#timePickerOverlay{position:fixed;inset:0;z-index:3000;background:rgba(15,25,19,.72);display:none;align-items:flex-end;justify-content:center;padding:0}
+#timePickerPanel{width:100%;max-width:760px;background:var(--paper);border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.22)}
+.timePickerHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.timePickerHeader h3{margin:0}
+.timePickerActions{display:flex;gap:8px}
+.timePickerActions button{min-width:48px;font-size:20px;padding:8px 12px}
+.timeWheels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;height:260px}
+.timeWheel{overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--line);border-radius:16px;padding:102px 0}
+.timeWheel button{display:block;width:100%;height:56px;scroll-snap-align:center;border:0;border-radius:0;background:transparent;color:var(--ink);font-size:26px;font-weight:700;padding:0}
+.timeWheel button.selected{background:#e7ede8;color:var(--pine)}
+.timeWheelLabel{text-align:center;font-size:12px;color:var(--muted);margin-top:5px}
+.visitTimeBtn{width:100%;justify-content:space-between}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Stable Time Picker • v20.6</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Custom Time Picker • v20.7</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -296,7 +310,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.6";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.7";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -332,7 +346,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","20.6");
+    u.searchParams.set("v","20.7");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -495,7 +509,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v20.6"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v20.7"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -927,6 +941,66 @@ function applyPassportFilters(){
   });
 }
 
+
+let activeTimePicker=null;
+let pickerHour=12,pickerMinute=0,pickerAmPm="PM";
+
+function formatVisitTime12(v){
+  if(!v)return "";
+  const [hh,mm]=v.split(":").map(Number);
+  if(!Number.isFinite(hh)||!Number.isFinite(mm))return v;
+  const ap=hh>=12?"PM":"AM",h=hh%12||12;
+  return `${h}:${String(mm).padStart(2,"0")} ${ap}`;
+}
+function timeTo24(h,m,ap){
+  let hh=h%12;if(ap==="PM")hh+=12;
+  return `${String(hh).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+function buildTimeWheel(el,values,selected,onPick){
+  el.innerHTML="";
+  values.forEach(v=>{
+    const b=document.createElement("button");b.type="button";b.textContent=v.label;
+    if(v.value===selected)b.classList.add("selected");
+    b.addEventListener("click",()=>{selected=v.value;onPick(v.value);[...el.children].forEach(x=>x.classList.toggle("selected",x===b));b.scrollIntoView({block:"center",behavior:"smooth"})});
+    el.appendChild(b);
+  });
+  requestAnimationFrame(()=>{
+    const chosen=[...el.children].find(x=>x.classList.contains("selected"));
+    chosen?.scrollIntoView({block:"center",behavior:"auto"});
+  });
+}
+function openCustomTimePicker(num,input,button){
+  activeTimePicker={num,input,button};
+  const current=input.value;
+  if(current){
+    const [hh,mm]=current.split(":").map(Number);
+    pickerAmPm=hh>=12?"PM":"AM";pickerHour=hh%12||12;pickerMinute=mm||0;
+  }else{
+    const d=new Date();pickerAmPm=d.getHours()>=12?"PM":"AM";pickerHour=d.getHours()%12||12;pickerMinute=d.getMinutes();
+  }
+  buildTimeWheel(document.getElementById("hourWheel"),Array.from({length:12},(_,i)=>({value:i+1,label:String(i+1)})),pickerHour,v=>pickerHour=v);
+  buildTimeWheel(document.getElementById("minuteWheel"),Array.from({length:60},(_,i)=>({value:i,label:String(i).padStart(2,"0")})),pickerMinute,v=>pickerMinute=v);
+  buildTimeWheel(document.getElementById("ampmWheel"),[{value:"AM",label:"AM"},{value:"PM",label:"PM"}],pickerAmPm,v=>pickerAmPm=v);
+  const ov=document.getElementById("timePickerOverlay");ov.style.display="flex";ov.setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+}
+function closeCustomTimePicker(){
+  const ov=document.getElementById("timePickerOverlay");ov.style.display="none";ov.setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+  activeTimePicker=null;
+}
+async function saveCustomTimePicker(){
+  if(!activeTimePicker)return;
+  const {num,input,button}=activeTimePicker,value=timeTo24(pickerHour,pickerMinute,pickerAmPm);
+  input.value=value;
+  button.querySelector("span").textContent=formatVisitTime12(value);
+  const x=state.markers[num]||{};x.visitTime=value;state.markers[num]=x;
+  localStorage.setItem(KEY,JSON.stringify(state));
+  closeCustomTimePicker();
+  renderActivity();renderHomeDashboard();
+  await syncMarker(num);
+}
+
 function renderPassport(){
  const teamLabel=document.getElementById("passportTeamLabel");
  if(teamLabel)teamLabel.textContent=currentTeam()?.name||"this team";
@@ -937,38 +1011,17 @@ function renderPassport(){
  d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span>${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
  <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${m.status==="installed"?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}</div>
  <label>Custom marker name</label><input class="customName" type="text" placeholder="Optional — your own name for this marker" value="${(s.customName||"").replace(/"/g,"&quot;")}"><div class="muted" style="margin-top:5px">Leave blank to use the official DHR title.</div>
- <label>Date visited</label><input class="date" type="date" value="${s.date||""}"><label>Time visited</label><input class="visitTime" type="time" value="${s.visitTime||""}"><div class="muted" style="margin-top:5px">Enter the real time you were at the marker. This is what Recent Activity uses—not the upload time.</div>
+ <label>Date visited</label><input class="date" type="date" value="${s.date||""}"><label>Time visited</label><input class="visitTime" type="hidden" value="${s.visitTime||""}"><button type="button" class="visitTimeBtn secondary"><span>${s.visitTime?formatVisitTime12(s.visitTime):"Set visit time"}</span><span>›</span></button><div class="muted" style="margin-top:5px">Enter the real time you were at the marker. This is what Recent Activity uses—not the upload time.</div>
  <label>Selfie</label><div class="btnrow"><label class="photoPicker" for="photo-${m.num}">Choose from Photos</label><button type="button" class="secondary remove">Remove</button></div><input id="photo-${m.num}" class="file" type="file" accept="image/*" style="position:absolute;left:-10000px;width:1px;height:1px"><img class="photo">
  <label>Notes</label><textarea class="notes">${s.notes||""}</textarea></div>`;
  host.appendChild(d);
  if(openMarkers.has(Number(m.num))) d.open=true;
- const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
+ const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),visitTimeBtn=d.querySelector(".visitTimeBtn"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
  done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked){x.notFound=false;const now=new Date();if(!x.date)x.date=now.toISOString().slice(0,10);if(!x.visitTime)x.visitTime=now.toTimeString().slice(0,5)}state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();renderTrips();renderHomeDashboard();await syncMarker(m.num)});
  if(notfoundBtn)notfoundBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap();await syncMarker(m.num)});
  customName.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),customName:customName.value.trim()};save();renderTrips();renderMap();await syncMarker(m.num)});
  date.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
- let visitTimeBefore=visitTime.value;
- visitTime.addEventListener("focus",()=>{visitTimeBefore=visitTime.value});
- visitTime.addEventListener("input",()=>{
-   const x=state.markers[m.num]||{};
-   x.visitTime=visitTime.value;
-   state.markers[m.num]=x;
-   // Save locally only while the iOS wheel is open. Do not sync/re-render
-   // the Passport here or Safari will dismiss the native time picker.
-   localStorage.setItem(KEY,JSON.stringify(state));
- });
- visitTime.addEventListener("blur",async()=>{
-   const finalValue=visitTime.value;
-   const x=state.markers[m.num]||{};
-   x.visitTime=finalValue;
-   state.markers[m.num]=x;
-   localStorage.setItem(KEY,JSON.stringify(state));
-   if(finalValue!==visitTimeBefore){
-     renderActivity();
-     renderHomeDashboard();
-     await syncMarker(m.num);
-   }
- });
+ visitTimeBtn.addEventListener("click",()=>openCustomTimePicker(m.num,visitTime,visitTimeBtn));
  notes.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),notes:notes.value};save();await syncMarker(m.num)});
  fav.addEventListener("click",()=>{const x=state.markers[m.num]||{};x.favorite=!x.favorite;state.markers[m.num]=x;fav.textContent=x.favorite?"★ Favorite":"☆ Favorite";save()});
  file.addEventListener("change",async()=>{if(file.files&&file.files[0]){const chosen=file.files[0];try{img.style.display="none";setSyncState("waiting","Uploading selfie…");await putPhoto(m.num,chosen);const url=await uploadSharedPhoto(m.num,chosen);img.src=url;img.style.display="block";setSyncState("live","Live sync");renderMap()}catch(e){console.error(e);setSyncState("error","Photo upload failed");alert("Selfie upload failed: "+e.message)}}});
@@ -1195,8 +1248,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=20.6",{cache:"no-store"}),
-     fetch("./trips.json?v=20.6",{cache:"no-store"})
+     fetch("./markers.json?v=20.7",{cache:"no-store"}),
+     fetch("./trips.json?v=20.7",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
@@ -1216,6 +1269,8 @@ async function init(){
    document.getElementById("syncExistingSelfiesBtn")?.addEventListener("click",runExistingSelfieSync);
    document.getElementById("reconnectBtn")?.addEventListener("click",reconnectShared);
    document.getElementById("connectionRetryBtn")?.addEventListener("click",reconnectShared);
+   document.getElementById("timePickerCancel")?.addEventListener("click",closeCustomTimePicker);
+   document.getElementById("timePickerSave")?.addEventListener("click",saveCustomTimePicker);
    document.getElementById("rebuildTrips")?.addEventListener("click",renderTrips);
    document.getElementById("tripSize")?.addEventListener("change",renderTrips);
    document.getElementById("routeBuild")?.addEventListener("click",buildRouteHunt);
@@ -1239,6 +1294,24 @@ init();
     <p class="muted">Choose once. You can switch later from the Race screen.</p>
     <div id="pickerTeams" class="teamGrid"></div>
     <p class="muted" style="margin-top:14px">Progress syncs live between both couples. Your publishable Supabase key is safe for this browser app; the database password is never stored here.</p>
+  </div>
+</div>
+
+
+<div id="timePickerOverlay" aria-hidden="true">
+  <div id="timePickerPanel" role="dialog" aria-modal="true" aria-label="Choose visit time">
+    <div class="timePickerHeader">
+      <div><h3>Visit Time</h3><div class="muted">Scroll the numbers, then tap ✓ or ✕.</div></div>
+      <div class="timePickerActions">
+        <button id="timePickerCancel" type="button" class="outline" aria-label="Cancel">✕</button>
+        <button id="timePickerSave" type="button" aria-label="Save">✓</button>
+      </div>
+    </div>
+    <div class="timeWheels">
+      <div><div id="hourWheel" class="timeWheel"></div><div class="timeWheelLabel">Hour</div></div>
+      <div><div id="minuteWheel" class="timeWheel"></div><div class="timeWheelLabel">Minute</div></div>
+      <div><div id="ampmWheel" class="timeWheel"></div><div class="timeWheelLabel">AM / PM</div></div>
+    </div>
   </div>
 </div>
 
