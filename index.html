@@ -126,7 +126,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Adventure Dashboard • v20</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Adventure Dashboard • v20.1</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -281,7 +281,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v19.2";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.1";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -317,7 +317,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","19.2");
+    u.searchParams.set("v","20.1");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -480,7 +480,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v19.2"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v20.1"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -668,7 +668,8 @@ function renderAllShared(){
 function updateStats(){renderMap();
  const active=M.filter(m=>m.status==="installed"),done=active.filter(m=>state.markers[m.num]?.done).length,notfound=active.filter(m=>state.markers[m.num]?.notFound).length,pics=M.filter(m=>state.markers[m.num]?.hasPhoto).length;
  document.getElementById("doneN").textContent=done;document.getElementById("availN").textContent=active.length;document.getElementById("notFoundN").textContent=notfound;document.getElementById("photoN").textContent=pics;document.getElementById("bar").style.width=(active.length?Math.round(done/active.length*100):0)+"%";
- const next=active.find(m=>!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound);document.getElementById("nextText").textContent=next?`Next unvisited: #${next.num} — ${displayName(next)}, ${next.town}`:"All active markers complete! 🎉";document.getElementById("nextPin").href=next?applePin(next):"#";
+ const next=active.find(m=>!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound);document.getElementById("nextText").textContent=next?`Next unvisited: #${next.num} — ${displayName(next)}, ${next.town}`:"All active markers complete! 🎉";const nextPin=document.getElementById("nextPin");
+ if(nextPin)nextPin.href=next?applePin(next):"#";
 
  renderHomeDashboard();
 }
@@ -1069,12 +1070,13 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=20",{cache:"no-store"}),
-     fetch("./trips.json?v=20",{cache:"no-store"})
+     fetch("./markers.json?v=20.1",{cache:"no-store"}),
+     fetch("./trips.json?v=20.1",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-   renderPassport();renderTrips();renderMap();setupMapGestures();updateStats();renderHomeDashboard();
+   renderPassport();renderTrips();renderMap();setupMapGestures();
+   try{updateStats();renderHomeDashboard()}catch(e){console.error("Local dashboard render",e)}
    try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
    maybeOfferImport();
 
