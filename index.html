@@ -133,7 +133,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Keep Marker Open • v20.5</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Stable Time Picker • v20.6</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -296,7 +296,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.5";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.6";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -332,7 +332,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","20.5");
+    u.searchParams.set("v","20.6");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -495,7 +495,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v20.5"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v20.6"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -947,7 +947,28 @@ function renderPassport(){
  if(notfoundBtn)notfoundBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap();await syncMarker(m.num)});
  customName.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),customName:customName.value.trim()};save();renderTrips();renderMap();await syncMarker(m.num)});
  date.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
- visitTime.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),visitTime:visitTime.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
+ let visitTimeBefore=visitTime.value;
+ visitTime.addEventListener("focus",()=>{visitTimeBefore=visitTime.value});
+ visitTime.addEventListener("input",()=>{
+   const x=state.markers[m.num]||{};
+   x.visitTime=visitTime.value;
+   state.markers[m.num]=x;
+   // Save locally only while the iOS wheel is open. Do not sync/re-render
+   // the Passport here or Safari will dismiss the native time picker.
+   localStorage.setItem(KEY,JSON.stringify(state));
+ });
+ visitTime.addEventListener("blur",async()=>{
+   const finalValue=visitTime.value;
+   const x=state.markers[m.num]||{};
+   x.visitTime=finalValue;
+   state.markers[m.num]=x;
+   localStorage.setItem(KEY,JSON.stringify(state));
+   if(finalValue!==visitTimeBefore){
+     renderActivity();
+     renderHomeDashboard();
+     await syncMarker(m.num);
+   }
+ });
  notes.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),notes:notes.value};save();await syncMarker(m.num)});
  fav.addEventListener("click",()=>{const x=state.markers[m.num]||{};x.favorite=!x.favorite;state.markers[m.num]=x;fav.textContent=x.favorite?"★ Favorite":"☆ Favorite";save()});
  file.addEventListener("change",async()=>{if(file.files&&file.files[0]){const chosen=file.files[0];try{img.style.display="none";setSyncState("waiting","Uploading selfie…");await putPhoto(m.num,chosen);const url=await uploadSharedPhoto(m.num,chosen);img.src=url;img.style.display="block";setSyncState("live","Live sync");renderMap()}catch(e){console.error(e);setSyncState("error","Photo upload failed");alert("Selfie upload failed: "+e.message)}}});
@@ -1174,8 +1195,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=20.5",{cache:"no-store"}),
-     fetch("./trips.json?v=20.5",{cache:"no-store"})
+     fetch("./markers.json?v=20.6",{cache:"no-store"}),
+     fetch("./trips.json?v=20.6",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
