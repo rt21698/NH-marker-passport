@@ -146,10 +146,36 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .timeWheel:after{content:"";position:absolute;left:6px;right:6px;top:102px;height:56px;border-top:1px solid #cfd8d1;border-bottom:1px solid #cfd8d1;pointer-events:none}
 .timeWheelLabel{text-align:center;font-size:12px;color:var(--muted);margin-top:5px}
 .visitTimeBtn{width:100%;justify-content:space-between}
+
+/* v21 Journey Planner */
+.routeChoice{border:1px solid var(--line);border-radius:18px;padding:15px;margin:12px 0;background:#fff}
+.routeChoice.recommended{border:2px solid var(--pine);box-shadow:0 4px 18px rgba(23,59,42,.08)}
+.routeChoice h3{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.recommendPill{font-size:11px;background:#e5f1e8;color:#28563f;border-radius:999px;padding:5px 8px}
+.routeChoiceStats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}
+.routeChoiceStats>div{background:#f3f6f2;border:1px solid #e4e9e4;border-radius:11px;padding:9px;text-align:center}
+.routeChoiceStats b{display:block;font-size:17px;color:var(--pine)}
+.routeChoiceStats span{font-size:10.5px;color:var(--muted)}
+.routeStopPreview{padding:7px 0;border-top:1px solid #eee8dc;font-size:13px}
+.journeyCard{border:2px solid var(--pine)}
+.journeyHero{background:linear-gradient(145deg,#173b2a,#285d43);color:#fff;border-radius:15px;padding:14px}
+.journeyHero .muted{color:rgba(255,255,255,.78)}
+.journeyHero .btn{background:#fff;color:var(--pine);width:100%;font-size:17px;padding:13px}
+.offlineReady{display:inline-block;background:#e4f2e8;color:#173b2a;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:850}
+.journeyProgress{height:9px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin:10px 0}
+.journeyProgress>div{height:100%;background:#fff}
+.journeyStop{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #eee8dc}
+.journeyStop.current{background:#eef5f0;margin:0 -8px;padding:10px 8px;border-radius:11px}
+.journeyStop.completed{opacity:.52}
+.journeyStop .routeBadge{flex:none}
+.journeyTools{display:flex;gap:8px;flex-wrap:wrap}
+.journeyTools button,.journeyTools .btn{flex:1}
+.routeExplain{background:#fff8e7;border:1px solid #ead49c;border-radius:13px;padding:10px;margin:10px 0;font-size:12px;color:#665024}
+@media(max-width:520px){.routeChoiceStats{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Drag Time Picker • v20.9</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Journey Planner • v21</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -206,7 +232,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <section id="routehunt" class="view">
   <div class="card">
     <h2>🚗 Markers Along My Way</h2>
-    <p class="muted">Enter where you're leaving from and where you're going. The app finds unvisited NH markers close to the actual driving route.</p>
+    <p class="muted">Enter where you're leaving from and where you're going. Compare several marker-friendly driving plans, then save one as a complete multistop journey.</p>
     <label>Starting point</label>
     <input id="routeStart" type="text" placeholder="Example: Weare, NH">
     <div class="btnrow"><button id="routeUseLocation" type="button" class="secondary">Use My Current Location</button></div>
@@ -214,14 +240,15 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
     <input id="routeEnd" type="text" placeholder="Example: Holyoke Mall, Holyoke, MA">
     <div class="routeHuntGrid">
       <div><label>Maximum distance off route</label><select id="routeCorridor"><option value="1">1 mile</option><option value="3" selected>3 miles</option><option value="5">5 miles</option><option value="10">10 miles</option></select></div>
-      <div><label>Maximum marker stops</label><select id="routeLimit"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="25">25</option></select></div>
+      <div><label>Maximum marker stops</label><select id="routeLimit"><option value="4">4</option><option value="6">6</option><option value="8">8</option><option value="10" selected>10</option><option value="12">12</option></select></div>
     </div>
     <label>Show markers</label>
     <select id="routeTeamFilter"><option value="mine">Our team hasn't visited</option><option value="neither">Neither team has visited</option><option value="all">All active markers</option></select>
-    <div class="btnrow"><button id="routeBuild" type="button">Find Markers Along Route</button></div>
+    <div class="btnrow"><button id="routeBuild" type="button">Find Route Options</button></div>
     <p id="routeStatus" class="muted"></p>
   </div>
   <div id="routeResults"></div>
+  <div id="savedJourneyHost"></div>
 </section>
 <section id="map" class="view">
   <div class="card">
@@ -312,7 +339,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v20.9";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -348,7 +375,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","20.9");
+    u.searchParams.set("v","21");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -511,7 +538,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v20.9"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -1086,7 +1113,7 @@ function renderPassport(){
  host.appendChild(d);
  if(openMarkers.has(Number(m.num))) d.open=true;
  const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),visitTimeBtn=d.querySelector(".visitTimeBtn"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
- done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked){x.notFound=false;const now=new Date();if(!x.date)x.date=now.toISOString().slice(0,10);if(!x.visitTime)x.visitTime=now.toTimeString().slice(0,5)}state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();renderTrips();renderHomeDashboard();await syncMarker(m.num)});
+ done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked){x.notFound=false;const now=new Date();if(!x.date)x.date=now.toISOString().slice(0,10);if(!x.visitTime)x.visitTime=now.toTimeString().slice(0,5)}state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();renderTrips();renderHomeDashboard();if(done.checked)maybeAdvanceActiveJourney(m.num);await syncMarker(m.num)});
  if(notfoundBtn)notfoundBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap();await syncMarker(m.num)});
  customName.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),customName:customName.value.trim()};save();renderTrips();renderMap();await syncMarker(m.num)});
  date.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
@@ -1252,43 +1279,254 @@ async function geocodePlace(q){
   const x=(await r.json())[0];if(!x)throw Error(`Couldn't find "${q}". Try adding the city and state.`);
   return {lat:+x.lat,lon:+x.lon,label:x.display_name};
 }
+
+const JOURNEY_KEY="nh-active-journey-v21";
+
+function selectedTeamVisited(num){
+  if(currentTeamId&&teams.length){
+    const r=sharedRow(currentTeamId,num);
+    if(r)return r.status==="visited";
+  }
+  return !!state.markers[num]?.done;
+}
+function routeMarkerAllowed(m,filter){
+  if(filter==="all")return true;
+  const mine=selectedTeamVisited(m.num);
+  const them=otherTeam()?sharedStatus(otherTeam().id,m.num).done:false;
+  return filter==="neither"?!mine&&!them:!mine;
+}
+function scoreMarkersAlongLine(line,corridor,filter){
+  const scored=[];
+  M.filter(m=>m.status==="installed"&&validGps(m)&&routeMarkerAllowed(m,filter)).forEach(m=>{
+    let bestD=Infinity,bestProgress=0;
+    for(let i=0;i<line.length-1;i++){
+      const x=distancePointToSegmentMiles(m,line[i],line[i+1]);
+      if(x.d<bestD){bestD=x.d;bestProgress=i+x.t}
+    }
+    if(bestD<=corridor)scored.push({...m,off:bestD,progress:bestProgress});
+  });
+  return scored.sort((a,b)=>a.progress-b.progress||a.off-b.off);
+}
+async function routeThroughPoints(start,end,markers,overview=false){
+  const pts=[start,...markers,end];
+  const coords=pts.map(p=>`${p.lon},${p.lat}`).join(";");
+  const url=`https://router.project-osrm.org/route/v1/driving/${coords}?overview=${overview?"full":"false"}&geometries=geojson&steps=false`;
+  const r=await fetch(url),d=await r.json(),route=d.routes?.[0];
+  if(!route)throw new Error("Road route unavailable");
+  return route;
+}
+function chooseSpreadMarkers(pool,count){
+  if(pool.length<=count)return [...pool];
+  // Preserve geographical order and spread stops through the trip instead of
+  // taking every marker from the first dense cluster.
+  const out=[],used=new Set();
+  for(let k=0;k<count;k++){
+    const idx=Math.round(k*(pool.length-1)/Math.max(1,count-1));
+    if(!used.has(idx)){used.add(idx);out.push(pool[idx])}
+  }
+  return out.sort((a,b)=>a.progress-b.progress);
+}
+function chooseLowDetour(pool,count){
+  return [...pool].sort((a,b)=>a.off-b.off).slice(0,count).sort((a,b)=>a.progress-b.progress);
+}
+function chooseBalanced(pool,count){
+  if(pool.length<=count)return [...pool];
+  // Favor close markers, but also use route progress bins to prevent clustering.
+  const bins=Math.min(count,pool.length),picked=[];
+  for(let i=0;i<bins;i++){
+    const lo=i/bins,hi=(i+1)/bins;
+    const minP=pool[0].progress,maxP=pool[pool.length-1].progress||1;
+    const bucket=pool.filter(x=>{
+      const n=(x.progress-minP)/Math.max(.001,maxP-minP);
+      return n>=lo&&(i===bins-1?n<=hi:n<hi);
+    }).sort((a,b)=>a.off-b.off);
+    if(bucket[0])picked.push(bucket[0]);
+  }
+  const ids=new Set(picked.map(x=>x.num));
+  for(const m of [...pool].sort((a,b)=>a.off-b.off)){
+    if(picked.length>=count)break;
+    if(!ids.has(m.num)){picked.push(m);ids.add(m.num)}
+  }
+  return picked.sort((a,b)=>a.progress-b.progress);
+}
+function optionStatsHTML(o,base){
+  const extra=Math.max(0,o.duration-base.duration);
+  const extraMiles=Math.max(0,(o.distance-base.distance)/1609.344);
+  return `<div class="routeChoiceStats">
+    <div><b>${(o.distance/1609.344).toFixed(0)} mi</b><span>road miles</span></div>
+    <div><b>${formatTime(o.duration)}</b><span>driving time</span></div>
+    <div><b>${o.markers.length}</b><span>marker stops</span></div>
+    <div><b>+${formatTime(extra)}</b><span>vs fastest</span></div>
+  </div>
+  <div class="muted">About ${extraMiles.toFixed(0)} extra road miles • estimated full adventure ${formatTime(o.duration+o.markers.length*8*60)}</div>`;
+}
+function renderRouteChoice(o,base){
+  const preview=o.markers.map((m,i)=>`<div class="routeStopPreview"><strong>${i+1}. #${m.num}</strong> ${displayName(m)} <span class="muted">• ${m.town}</span></div>`).join("");
+  return `<div class="routeChoice ${o.recommended?"recommended":""}">
+    <h3><span>${o.icon} ${o.title}</span>${o.recommended?'<span class="recommendPill">BEST BALANCE</span>':""}</h3>
+    <p class="muted">${o.description}</p>
+    ${optionStatsHTML(o,base)}
+    <details style="margin-top:10px"><summary><strong>See ${o.markers.length} marker stops</strong></summary>${preview||'<p class="muted">No marker stops fit this option.</p>'}</details>
+    <div class="btnrow"><button type="button" class="saveJourney" data-kind="${o.kind}">Save This Journey</button></div>
+  </div>`;
+}
 async function buildRouteHunt(){
   const status=document.getElementById("routeStatus"),out=document.getElementById("routeResults"),btn=document.getElementById("routeBuild");
-  btn.disabled=true;btn.textContent="Building route…";status.textContent="Finding your driving route…";out.innerHTML="";
+  btn.disabled=true;btn.textContent="Comparing routes…";status.textContent="Finding driving alternatives and marker opportunities…";out.innerHTML="";
   try{
     let start;
     const saved=document.getElementById("routeStart").dataset.coords;
-    if(saved){const [lat,lon]=saved.split(",").map(Number);start={lat,lon,label:"Current location"}}
-    else start=await geocodePlace(document.getElementById("routeStart").value.trim());
-    const end=await geocodePlace(document.getElementById("routeEnd").value.trim());
-    const rr=await fetch(`https://router.project-osrm.org/route/v1/driving/${start.lon},${start.lat};${end.lon},${end.lat}?overview=full&geometries=geojson`);
-    const data=await rr.json(),route=data.routes?.[0];if(!route)throw Error("A driving route could not be calculated.");
-    const line=route.geometry.coordinates.map(([lon,lat])=>({lat,lon}));
-    const corridor=+document.getElementById("routeCorridor").value,limit=+document.getElementById("routeLimit").value,filter=document.getElementById("routeTeamFilter").value;
-    let candidates=M.filter(m=>m.status==="installed"&&validGps(m)).filter(m=>{
-      if(filter==="all")return true;
-      const mine=currentTeamId?sharedStatus(currentTeamId,m.num).done:!!state.markers[m.num]?.done;
-      const them=otherTeam()?sharedStatus(otherTeam().id,m.num).done:false;
-      return filter==="neither"?!mine&&!them:!mine;
-    });
-    const scored=[];
-    for(const m of candidates){
-      let best={d:Infinity,progress:0};
-      for(let i=0;i<line.length-1;i++){
-        const x=distancePointToSegmentMiles(m,line[i],line[i+1]);
-        if(x.d<best.d)best={d:x.d,progress:i+x.t};
-      }
-      if(best.d<=corridor)scored.push({...m,off:best.d,progress:best.progress});
+    if(saved){
+      const [lat,lon]=saved.split(",").map(Number);start={lat,lon,label:"Current location"};
+    }else{
+      const q=document.getElementById("routeStart").value.trim();
+      if(!q)throw new Error("Enter a starting point or use your current location.");
+      start=await geocodePlace(q);
     }
-    scored.sort((a,b)=>a.progress-b.progress||a.off-b.off);
-    const chosen=scored.slice(0,limit);
-    status.textContent=`Normal drive: ${formatMiles(route.distance)} mi • about ${formatTime(route.duration)}. Found ${scored.length} eligible marker${scored.length===1?"":"s"} within ${corridor} mi of the route.`;
-    if(!chosen.length){out.innerHTML='<div class="card"><h3>No matching markers that close to this route.</h3><p class="muted">Try increasing the off-route distance.</p></div>';return}
-    out.innerHTML=`<div class="card"><h3>${chosen.length} marker${chosen.length===1?"":"s"} worth considering</h3><p class="muted">Ordered from start to destination. “Off route” is distance from the driving path, not added driving time.</p><div id="routeStopList"></div></div>`;
-    document.getElementById("routeStopList").innerHTML=chosen.map((m,i)=>`<div class="routeHuntResult"><div class="routeBadge">${i+1}</div><div><strong>#${m.num} — ${displayName(m)}</strong><div class="muted">${m.town} • about ${m.off<0.1?"on route":m.off.toFixed(1)+" mi off route"}</div></div><a class="btn secondary" href="${applePin(m)}">Pin</a></div>`).join("");
-    localStorage.setItem("nh-last-route-hunt-v20",JSON.stringify({savedAt:new Date().toISOString(),start,end,corridor,markers:chosen.map(m=>m.num)}));
-  }catch(e){status.textContent=e.message||"Route Hunt couldn't build this route."}
-  finally{btn.disabled=false;btn.textContent="Find Markers Along Route"}
+    const endText=document.getElementById("routeEnd").value.trim();
+    if(!endText)throw new Error("Enter your final destination.");
+    const end=await geocodePlace(endText);
+
+    const altURL=`https://router.project-osrm.org/route/v1/driving/${start.lon},${start.lat};${end.lon},${end.lat}?overview=full&geometries=geojson&alternatives=true&steps=false`;
+    const altResponse=await fetch(altURL),altData=await altResponse.json();
+    const alternatives=altData.routes||[];
+    if(!alternatives.length)throw new Error("A driving route could not be calculated.");
+
+    const base=alternatives[0];
+    const corridor=+document.getElementById("routeCorridor").value;
+    const limit=Math.min(12,+document.getElementById("routeLimit").value);
+    const filter=document.getElementById("routeTeamFilter").value;
+
+    // Find marker pools for every reasonable driving alternative.
+    const pathPools=alternatives.map((r,idx)=>{
+      const line=r.geometry.coordinates.map(([lon,lat])=>({lat,lon}));
+      return {idx,route:r,line,pool:scoreMarkersAlongLine(line,corridor,filter)};
+    });
+
+    const primary=pathPools[0];
+    const richest=[...pathPools].sort((a,b)=>b.pool.length-a.pool.length || a.route.duration-b.route.duration)[0];
+
+    const lowMarkers=chooseLowDetour(primary.pool,Math.min(limit,Math.max(3,Math.ceil(limit*.4))));
+    const balancedPool=(richest.pool.length>primary.pool.length+2?richest:primary);
+    const balancedMarkers=chooseBalanced(balancedPool.pool,Math.min(limit,Math.max(5,Math.ceil(limit*.75))));
+    const maxMarkers=chooseSpreadMarkers(richest.pool,Math.min(limit,richest.pool.length));
+
+    const specs=[
+      {kind:"quick",title:"Low-Detour Route",icon:"⚡",description:"Stay close to the fastest normal drive and grab the easiest markers.",markers:lowMarkers,recommended:false},
+      {kind:"balanced",title:"Best Marker Route",icon:"🌲",description:"A stronger marker haul without turning the drive into an all-day detour.",markers:balancedMarkers,recommended:true},
+      {kind:"max",title:"Maximum Marker Route",icon:"🏆",description:"Use the marker-richest reasonable path and collect as many stops as your limit allows.",markers:maxMarkers,recommended:false}
+    ];
+
+    const opts=[];
+    for(const s of specs){
+      const route=s.markers.length?await routeThroughPoints(start,end,s.markers,false):base;
+      opts.push({...s,start,end,distance:route.distance,duration:route.duration});
+    }
+    window._routeOptionsV21=opts;
+
+    status.textContent=`Normal fastest drive: ${(base.distance/1609.344).toFixed(0)} mi • ${formatTime(base.duration)}.`;
+    out.innerHTML=`<div class="card">
+      <h2>Choose Your Journey</h2>
+      <div class="routeExplain"><strong>Team-specific:</strong> route suggestions use the team selected on this phone. A saved journey stays on the phone even when cell service disappears.</div>
+      ${opts.map(o=>renderRouteChoice(o,base)).join("")}
+    </div>`;
+    out.querySelectorAll(".saveJourney").forEach(b=>b.addEventListener("click",()=>saveV21Journey(b.dataset.kind)));
+  }catch(e){
+    console.error(e);status.textContent=e.message||"Route planner couldn't build this trip.";
+  }finally{
+    btn.disabled=false;btn.textContent="Find Route Options";
+  }
+}
+function appleMultiStopJourneyURL(journey){
+  // Apple's unified Maps URL supports repeating waypoint parameters.
+  const params=new URLSearchParams();
+  params.set("source",`${journey.start.lat},${journey.start.lon}`);
+  params.set("destination",`${journey.end.lat},${journey.end.lon}`);
+  journey.markers.forEach(m=>params.append("waypoint",`${m.lat},${m.lon}`));
+  params.set("mode","driving");
+  return `https://maps.apple.com/directions?${params.toString()}`;
+}
+function appleSingleDestinationURL(p){
+  return `https://maps.apple.com/directions?destination=${encodeURIComponent(`${p.lat},${p.lon}`)}&mode=driving`;
+}
+function saveV21Journey(kind){
+  const o=(window._routeOptionsV21||[]).find(x=>x.kind===kind);if(!o)return;
+  const j={
+    version:21,id:`${Date.now()}`,savedAt:new Date().toISOString(),
+    teamId:currentTeamId,kind:o.kind,title:o.title,
+    start:o.start,end:o.end,distance:o.distance,duration:o.duration,currentIndex:0,
+    markers:o.markers.map(m=>({num:m.num,name:displayName(m),town:m.town,lat:m.lat,lon:m.lon}))
+  };
+  localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
+  renderSavedJourney();
+  document.getElementById("savedJourneyHost")?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function loadV21Journey(){
+  try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||"null")}catch(e){return null}
+}
+function journeyStopDone(j,m){
+  // Always honor local status first so this continues to work offline.
+  if(state.markers[m.num]?.done)return true;
+  if(j.teamId&&j.teamId===currentTeamId)return selectedTeamVisited(m.num);
+  return false;
+}
+function normalizeJourneyIndex(j){
+  while(j.currentIndex<j.markers.length&&journeyStopDone(j,j.markers[j.currentIndex]))j.currentIndex++;
+  return j;
+}
+function saveJourneyState(j){
+  localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
+}
+function maybeAdvanceActiveJourney(num){
+  const j=loadV21Journey();if(!j)return;
+  j.currentIndex=Math.max(0,j.currentIndex||0);
+  if(j.markers[j.currentIndex]?.num===Number(num)){
+    j.currentIndex++;
+    normalizeJourneyIndex(j);saveJourneyState(j);renderSavedJourney();
+  }
+}
+function renderSavedJourney(){
+  const host=document.getElementById("savedJourneyHost");if(!host)return;
+  let j=loadV21Journey();
+  if(!j){host.innerHTML="";return}
+  j=normalizeJourneyIndex(j);saveJourneyState(j);
+  const i=j.currentIndex||0,markerDone=i>=j.markers.length,next=markerDone?j.end:j.markers[i];
+  const pct=j.markers.length?Math.round(Math.min(i,j.markers.length)/j.markers.length*100):100;
+  const stopRows=j.markers.map((m,k)=>{
+    const completed=k<i||journeyStopDone(j,m),current=k===i&&!markerDone;
+    return `<div class="journeyStop ${completed?"completed":""} ${current?"current":""}">
+      <div class="routeBadge">${completed?"✓":k+1}</div>
+      <div><strong>#${m.num} — ${m.name}</strong><div class="muted">${m.town}</div></div>
+      <span>${current?"NEXT":""}</span>
+    </div>`;
+  }).join("");
+  host.innerHTML=`<div class="card journeyCard">
+    <div class="journeyHero">
+      <span class="offlineReady">✓ SAVED FOR OFFLINE USE</span>
+      <h2 style="margin-top:10px">${j.title}</h2>
+      <div class="muted">${j.markers.length} marker stops • ${(j.distance/1609.344).toFixed(0)} mi • ${formatTime(j.duration)} driving</div>
+      <div class="journeyProgress"><div style="width:${pct}%"></div></div>
+      <h3>${markerDone?"All marker stops complete!":`Next: ${i+1} of ${j.markers.length} — #${next.num} ${next.name}`}</h3>
+      <a class="btn" href="${appleMultiStopJourneyURL(j)}">🚗 GO — OPEN FULL JOURNEY IN APPLE MAPS</a>
+    </div>
+    <div class="journeyTools" style="margin-top:10px">
+      <a class="btn secondary" href="${appleSingleDestinationURL(next)}">${markerDone?"Open Final Destination":"Open Next Stop Only"}</a>
+      <button id="journeyNextBtn" type="button" class="secondary">${markerDone?"Finish Journey":"Advance to Next Stop"}</button>
+      <button id="journeyEndBtn" type="button" class="outline">End Journey</button>
+    </div>
+    <p class="muted" style="margin-top:10px">The complete stop order is stored on this phone. If service disappears, this list and your next-stop coordinates remain available. Apple Maps turn-by-turn offline depends on map data available on the phone.</p>
+    <div>${stopRows}
+      <div class="journeyStop ${markerDone?"current":""}">
+        <div class="routeBadge">🏁</div><div><strong>Final Destination</strong><div class="muted">${j.end.label||"Destination"}</div></div><span>${markerDone?"NEXT":""}</span>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("journeyNextBtn").onclick=()=>{
+    const x=loadV21Journey();if(!x)return;
+    if((x.currentIndex||0)<x.markers.length){x.currentIndex=(x.currentIndex||0)+1;normalizeJourneyIndex(x);saveJourneyState(x);renderSavedJourney()}
+    else {localStorage.removeItem(JOURNEY_KEY);renderSavedJourney()}
+  };
+  document.getElementById("journeyEndBtn").onclick=()=>{localStorage.removeItem(JOURNEY_KEY);renderSavedJourney()};
 }
 function renderHomeDashboard(){
   if(!M.length)return;
@@ -1317,12 +1555,12 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=20.9",{cache:"no-store"}),
-     fetch("./trips.json?v=20.9",{cache:"no-store"})
+     fetch("./markers.json?v=21",{cache:"no-store"}),
+     fetch("./trips.json?v=21",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-   renderPassport();renderTrips();renderMap();setupMapGestures();
+   renderPassport();renderTrips();renderMap();setupMapGestures();renderSavedJourney();
    try{updateStats();renderHomeDashboard()}catch(e){console.error("Local dashboard render",e)}
    try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
    maybeOfferImport();
