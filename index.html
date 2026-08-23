@@ -175,7 +175,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Unified Location • v21.4</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Location Startup Fix • v21.5</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -339,7 +339,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.4";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.5";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -375,7 +375,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","21.4");
+    u.searchParams.set("v","21.5");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -542,7 +542,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.4"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.5"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -1595,22 +1595,26 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=21.4",{cache:"no-store"}),
-     fetch("./trips.json?v=21.4",{cache:"no-store"})
+     fetch("./markers.json?v=21.5",{cache:"no-store"}),
+     fetch("./trips.json?v=21.5",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
    renderPassport();renderTrips();renderMap();setupMapGestures();renderSavedJourney();
    try{updateStats();renderHomeDashboard()}catch(e){console.error("Local dashboard render",e)}
+
+   // Bind device-location features BEFORE any Supabase/network wait.
+   // This keeps Route/Near Me/Adventure usable even when cloud sync is slow.
+   document.getElementById("routeUseLocation")?.addEventListener("click",setRouteToCurrentLocation);
+   document.getElementById("nearBtn")?.addEventListener("click",()=>locate(false));
+   document.getElementById("nearAll")?.addEventListener("click",()=>locate(true));
+   document.getElementById("advBuild")?.addEventListener("click",buildAdventure);
+
    try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
    maybeOfferImport();
 
    document.getElementById("search").addEventListener("input",applyPassportFilters);
    document.getElementById("passportFilter")?.addEventListener("change",applyPassportFilters);
-   document.getElementById("routeUseLocation")?.addEventListener("click",setRouteToCurrentLocation);
-   document.getElementById("nearBtn").addEventListener("click",()=>locate(false));
-   document.getElementById("nearAll").addEventListener("click",()=>locate(true));
-   document.getElementById("advBuild").addEventListener("click",buildAdventure);
    document.getElementById("mapTeamView")?.addEventListener("change",renderMap);
    document.getElementById("importLocalBtn")?.addEventListener("click",importLocalProgress);
    document.getElementById("dismissImportBtn")?.addEventListener("click",()=>{if(currentTeamId)localStorage.setItem("nh-import-dismissed-"+currentTeamId,"yes");document.getElementById("importBanner").style.display="none"});
