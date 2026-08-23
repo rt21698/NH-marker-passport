@@ -175,7 +175,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Journey Planner • v21.3</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Unified Location • v21.4</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -339,7 +339,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.3";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.4";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -375,7 +375,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","21.3");
+    u.searchParams.set("v","21.4");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -435,8 +435,6 @@ function openView(id){document.querySelectorAll(".view").forEach(v=>v.classList.
 document.addEventListener("click",e=>{
   const tab=e.target.closest(".tab");if(tab)openView(tab.dataset.view);
   const o=e.target.closest("[data-open]");if(o)openView(o.dataset.open);
-  const loc=e.target.closest("#routeUseLocation");
-  if(loc){e.preventDefault();e.stopPropagation();useRouteCurrentLocation();}
 });
 
 
@@ -544,7 +542,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.3"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.4"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -1211,16 +1209,56 @@ function renderTrips(){
  queueTripCalculations(calcQueue);
 }
 
-function locate(includeVisited){
+
+let sharedLocationRequest=null;
+function deviceLocationErrorMessage(err){
+  if(!err)return "Could not get your location.";
+  if(err.code===1)return "Location access was denied by iPhone.";
+  if(err.code===2)return "iPhone could not determine your location right now.";
+  if(err.code===3)return "The location request timed out.";
+  return `Could not get your location${err.message?`: ${err.message}`:"."}`;
+}
+function getSharedDeviceLocation(){
+  if(sharedLocationRequest)return sharedLocationRequest;
+  sharedLocationRequest=new Promise((resolve,reject)=>{
+    if(!navigator.geolocation){sharedLocationRequest=null;reject(new Error("Geolocation is not available."));return}
+    let settled=false,watchId=null;
+    const hardTimer=setTimeout(()=>finish(false,Object.assign(new Error("Location request timed out."),{code:3})),16000);
+    function finish(ok,value){
+      if(settled)return;settled=true;
+      if(watchId!==null)navigator.geolocation.clearWatch(watchId);
+      clearTimeout(hardTimer);sharedLocationRequest=null;
+      ok?resolve(value):reject(value);
+    }
+    const success=p=>finish(true,{lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy,timestamp:p.timestamp});
+    const fatal=e=>{if(e?.code===1)finish(false,e)};
+    navigator.geolocation.getCurrentPosition(success,fatal,{enableHighAccuracy:false,timeout:8000,maximumAge:600000});
+    try{watchId=navigator.geolocation.watchPosition(success,fatal,{enableHighAccuracy:false,timeout:15000,maximumAge:600000})}catch(e){}
+  });
+  return sharedLocationRequest;
+}
+async function setRouteToCurrentLocation(){
+  const st=document.getElementById("routeStatus"),btn=document.getElementById("routeUseLocation");
+  if(st)st.textContent="Getting your iPhone location…";
+  if(btn)btn.textContent="Getting Location…";
+  try{
+    const p=await getSharedDeviceLocation();currentPos={lat:p.lat,lon:p.lon};
+    const el=document.getElementById("routeStart");el.value="Current location";el.dataset.coords=`${p.lat},${p.lon}`;
+    if(st)st.textContent=`✓ Current location ready${p.accuracy?` • about ${Math.round(p.accuracy)} m accuracy`:""}.`;
+  }catch(e){if(st)st.textContent=deviceLocationErrorMessage(e)+" Tap again to retry."}
+  finally{if(btn)btn.textContent="Use My Current Location"}
+}
+
+async function locate(includeVisited){
  const st=document.getElementById("nearStatus"),out=document.getElementById("nearResults");
- st.textContent="Getting location…";
- navigator.geolocation.getCurrentPosition(p=>{
-   const lat=p.coords.latitude,lon=p.coords.longitude;currentPos={lat,lon};
-   const list=M.filter(m=>m.status==="installed"&&validGps(m)&&(includeVisited||(!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound)))
+ st.textContent="Getting your iPhone location…";
+ try{
+   const p=await getSharedDeviceLocation(),lat=p.lat,lon=p.lon;currentPos={lat,lon};
+   const list=M.filter(m=>m.status==="installed"&&validGps(m)&&(includeVisited||(!selectedTeamVisited(m.num)&&!state.markers[m.num]?.notFound)))
      .map(m=>({...m,d:miles(lat,lon,m.lat,m.lon)})).sort((a,b)=>a.d-b.d).slice(0,12);
-   st.textContent="Closest candidates are found quickly by proximity. Tap Road Miles on a result for actual driving distance.";
+   st.textContent=`✓ Location ready${p.accuracy?` • about ${Math.round(p.accuracy)} m accuracy`:""}.`;
    out.innerHTML=list.map(m=>`<div class="near"><div class="nearTop"><div><div class="muted">#${m.num} • ${m.town}</div><h3>${displayName(m)}</h3>${officialNameNote(m)}</div></div><p class="muted">${m.location||""}</p><div class="roadMiles" id="road-${m.num}"></div><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button class="secondary" type="button" onclick="roadMilesFromCurrent(${m.num})">Road Miles</button></div></div>`).join("");
- },()=>{st.textContent="Could not get your location. Check Safari location permission and try again."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
+ }catch(e){st.textContent=deviceLocationErrorMessage(e)+" Tap Use My Location to try again."}
 }
 
 async function roadMilesFromCurrent(num){
@@ -1236,39 +1274,34 @@ async function roadMilesFromCurrent(num){
  }catch(e){box.textContent="Road distance unavailable right now."}
 }
 
-function buildAdventure(){
+async function buildAdventure(){
  const st=document.getElementById("advStatus"),out=document.getElementById("advResults"),
        hours=+document.getElementById("advHours").value,radius=+document.getElementById("advRadius").value,
        limit=hours<=2?6:hours<=4?11:20;
- st.textContent="Getting location…";
- navigator.geolocation.getCurrentPosition(p=>{
-   let lat=p.coords.latitude,lon=p.coords.longitude;currentPos={lat,lon};
-   let cands=M.filter(m=>m.status==="installed"&&validGps(m)&&!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound)
+ st.textContent="Getting your iPhone location…";
+ try{
+   const p=await getSharedDeviceLocation();let lat=p.lat,lon=p.lon;currentPos={lat,lon};
+   let cands=M.filter(m=>m.status==="installed"&&validGps(m)&&!selectedTeamVisited(m.num)&&!state.markers[m.num]?.notFound)
      .map(m=>({...m,startD:miles(lat,lon,m.lat,m.lon)})).filter(m=>m.startD<=radius);
    const route=[];let cur={lat,lon};
    while(cands.length&&route.length<limit){
      cands.sort((a,b)=>miles(cur.lat,cur.lon,a.lat,a.lon)-miles(cur.lat,cur.lon,b.lat,b.lon));
      const x=cands.shift();x.leg=miles(cur.lat,cur.lon,x.lat,x.lon);route.push(x);cur=x;
    }
-   st.textContent=`Suggested ${route.length} stops. Tap Calculate Road Miles for actual driving distance.`;
+   st.textContent=`✓ Suggested ${route.length} stops${p.accuracy?` • location accuracy about ${Math.round(p.accuracy)} m`:""}.`;
    out.innerHTML=`<div class="card"><div class="btnrow"><button id="advRoad" class="secondary" ${route.length<2?"disabled":""}>Calculate Road Miles</button></div><div id="advRoadSummary" class="muted"></div></div>`+
      route.map((m,i)=>`<div class="near" data-adv="${i}"><div class="nearTop"><div><div class="muted">Stop ${i+1} • #${m.num} • ${m.town}</div><h3>${displayName(m)}</h3>${officialNameNote(m)}</div></div><p class="muted">${m.location||""}</p><div class="roadMiles"></div><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a></div></div>`).join("");
    const btn=document.getElementById("advRoad");
    if(btn)btn.addEventListener("click",async()=>{
      const sum=document.getElementById("advRoadSummary");btn.disabled=true;btn.textContent="Calculating…";
      try{
-       const rr=await roadRouteForMarkers(route);
-       sum.textContent=`Road route: ${formatMiles(rr.distance)} mi • about ${formatTime(rr.duration)} driving`;
+       const rr=await roadRouteForMarkers(route);sum.textContent=`Road route: ${formatMiles(rr.distance)} mi • about ${formatTime(rr.duration)} driving`;
        const legs=rr.legs||[];
-       route.forEach((m,i)=>{
-         const b=document.querySelector(`[data-adv="${i}"] .roadMiles`);
-         if(b)b.textContent=i===0?"Start":legs[i-1]?`Road leg: ${formatMiles(legs[i-1].distance)} mi • ${formatTime(legs[i-1].duration)}`:"";
-       });
+       route.forEach((m,i)=>{const b=document.querySelector(`[data-adv="${i}"] .roadMiles`);if(b)b.textContent=i===0?"Start":legs[i-1]?`Road leg: ${formatMiles(legs[i-1].distance)} mi • ${formatTime(legs[i-1].duration)}`:""});
        btn.textContent="Refresh Road Miles";
-     }catch(e){sum.textContent="Road-routing service unavailable right now.";btn.textContent="Try Again"}
-     finally{btn.disabled=false}
+     }catch(e){sum.textContent="Road-routing service unavailable right now.";btn.textContent="Try Again"}finally{btn.disabled=false}
    });
- },()=>{st.textContent="Could not get location."},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
+ }catch(e){st.textContent=deviceLocationErrorMessage(e)+" Tap Build Adventure to try again."}
 }
 
 
@@ -1375,70 +1408,6 @@ function renderRouteChoice(o,base){
     <details style="margin-top:10px"><summary><strong>See ${o.markers.length} marker stops</strong></summary>${preview||'<p class="muted">No marker stops fit this option.</p>'}</details>
     <div class="btnrow"><button type="button" class="saveJourney" data-kind="${o.kind}">Save This Journey</button></div>
   </div>`;
-}
-
-let routeLocationBusy=false;
-let routeLocationWatchdog=null;
-
-function resetRouteLocationButton(message=""){
-  routeLocationBusy=false;
-  clearTimeout(routeLocationWatchdog);
-  routeLocationWatchdog=null;
-  const btn=document.getElementById("routeUseLocation");
-  const st=document.getElementById("routeStatus");
-  if(btn){
-    btn.disabled=false;
-    btn.textContent="Use My Current Location";
-  }
-  if(message&&st)st.textContent=message;
-}
-
-function useRouteCurrentLocation(){
-  const st=document.getElementById("routeStatus");
-  const btn=document.getElementById("routeUseLocation");
-
-  // If Safari has a stuck geolocation request, let a second tap reset and retry.
-  if(routeLocationBusy){
-    resetRouteLocationButton("Previous location request reset. Tap again to retry.");
-    return;
-  }
-
-  if(!navigator.geolocation){
-    resetRouteLocationButton("This browser does not provide location access. Type your starting point instead.");
-    return;
-  }
-
-  routeLocationBusy=true;
-
-  // IMPORTANT: do not disable the button. iOS Safari can occasionally fail to
-  // return from a geolocation request, and a disabled button then gets stuck.
-  if(btn)btn.textContent="Trying Location…";
-  if(st)st.textContent="Location button tapped — asking iPhone for your position…";
-
-  // Our own watchdog is slightly longer than the browser request timeout.
-  routeLocationWatchdog=setTimeout(()=>{
-    resetRouteLocationButton("Location request stalled. Tap the button to try again, or type your starting point.");
-  },22000);
-
-  navigator.geolocation.getCurrentPosition(
-    p=>{
-      clearTimeout(routeLocationWatchdog);
-      const el=document.getElementById("routeStart");
-      if(el){
-        el.value="Current location";
-        el.dataset.coords=`${p.coords.latitude},${p.coords.longitude}`;
-      }
-      resetRouteLocationButton("✓ Current location ready.");
-    },
-    err=>{
-      let msg="Could not get your location.";
-      if(err?.code===1)msg="Location access was denied. Allow location access for this site in Safari, then try again.";
-      else if(err?.code===2)msg="Your location is temporarily unavailable. Tap again to retry, or type the starting point.";
-      else if(err?.code===3)msg="Location lookup timed out. Tap again to retry, or type the starting point.";
-      resetRouteLocationButton(msg);
-    },
-    {enableHighAccuracy:false,timeout:15000,maximumAge:300000}
-  );
 }
 
 async function buildRouteHunt(){
@@ -1626,8 +1595,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=21.3",{cache:"no-store"}),
-     fetch("./trips.json?v=21.3",{cache:"no-store"})
+     fetch("./markers.json?v=21.4",{cache:"no-store"}),
+     fetch("./trips.json?v=21.4",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
@@ -1638,6 +1607,7 @@ async function init(){
 
    document.getElementById("search").addEventListener("input",applyPassportFilters);
    document.getElementById("passportFilter")?.addEventListener("change",applyPassportFilters);
+   document.getElementById("routeUseLocation")?.addEventListener("click",setRouteToCurrentLocation);
    document.getElementById("nearBtn").addEventListener("click",()=>locate(false));
    document.getElementById("nearAll").addEventListener("click",()=>locate(true));
    document.getElementById("advBuild").addEventListener("click",buildAdventure);
