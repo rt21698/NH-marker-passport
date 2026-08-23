@@ -175,7 +175,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Journey Planner • v21</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Journey Planner • v21.1</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -235,7 +235,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
     <p class="muted">Enter where you're leaving from and where you're going. Compare several marker-friendly driving plans, then save one as a complete multistop journey.</p>
     <label>Starting point</label>
     <input id="routeStart" type="text" placeholder="Example: Weare, NH">
-    <div class="btnrow"><button id="routeUseLocation" type="button" class="secondary">Use My Current Location</button></div>
+    <div class="btnrow"><button id="routeUseLocation" type="button" class="secondary" onclick="useRouteCurrentLocation()">Use My Current Location</button></div>
     <label>Destination</label>
     <input id="routeEnd" type="text" placeholder="Example: Holyoke Mall, Holyoke, MA">
     <div class="routeHuntGrid">
@@ -339,7 +339,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.1";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -375,7 +375,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","21");
+    u.searchParams.set("v","21.1");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -538,7 +538,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.1"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -1370,6 +1370,38 @@ function renderRouteChoice(o,base){
     <div class="btnrow"><button type="button" class="saveJourney" data-kind="${o.kind}">Save This Journey</button></div>
   </div>`;
 }
+
+function useRouteCurrentLocation(){
+  const st=document.getElementById("routeStatus");
+  const btn=document.getElementById("routeUseLocation");
+  if(!navigator.geolocation){
+    if(st)st.textContent="This browser does not provide location access. Type your starting point instead.";
+    return;
+  }
+  if(btn){btn.disabled=true;btn.textContent="Getting Location…"}
+  if(st)st.textContent="Getting your current location…";
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      const el=document.getElementById("routeStart");
+      if(el){
+        el.value="Current location";
+        el.dataset.coords=`${p.coords.latitude},${p.coords.longitude}`;
+      }
+      if(st)st.textContent="✓ Current location ready.";
+      if(btn){btn.disabled=false;btn.textContent="Use My Current Location"}
+    },
+    err=>{
+      let msg="Could not get your location.";
+      if(err?.code===1)msg="Location access was denied. Allow location access for this site in Safari, then try again.";
+      else if(err?.code===2)msg="Your location is temporarily unavailable. Try again or type the starting point.";
+      else if(err?.code===3)msg="Location lookup timed out. Try again or type the starting point.";
+      if(st)st.textContent=msg;
+      if(btn){btn.disabled=false;btn.textContent="Use My Current Location"}
+    },
+    {enableHighAccuracy:true,timeout:20000,maximumAge:120000}
+  );
+}
+
 async function buildRouteHunt(){
   const status=document.getElementById("routeStatus"),out=document.getElementById("routeResults"),btn=document.getElementById("routeBuild");
   btn.disabled=true;btn.textContent="Comparing routes…";status.textContent="Finding driving alternatives and marker opportunities…";out.innerHTML="";
@@ -1555,8 +1587,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=21",{cache:"no-store"}),
-     fetch("./trips.json?v=21",{cache:"no-store"})
+     fetch("./markers.json?v=21.1",{cache:"no-store"}),
+     fetch("./trips.json?v=21.1",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
@@ -1581,10 +1613,6 @@ async function init(){
    document.getElementById("rebuildTrips")?.addEventListener("click",renderTrips);
    document.getElementById("tripSize")?.addEventListener("change",renderTrips);
    document.getElementById("routeBuild")?.addEventListener("click",buildRouteHunt);
-   document.getElementById("routeUseLocation")?.addEventListener("click",()=>{
-     const st=document.getElementById("routeStatus");st.textContent="Getting your location…";
-     navigator.geolocation.getCurrentPosition(p=>{const el=document.getElementById("routeStart");el.value="Current location";el.dataset.coords=`${p.coords.latitude},${p.coords.longitude}`;st.textContent="Current location ready.";},()=>{st.textContent="Could not get your location. You can type the starting point instead.";},{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
-   });
    document.getElementById("routeStart")?.addEventListener("input",e=>{if(e.target.value!=="Current location")delete e.target.dataset.coords});
 }catch(err){
    console.error(err);
