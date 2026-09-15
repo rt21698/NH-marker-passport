@@ -178,10 +178,16 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .tripConnectedHead{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .tripConnected .btn{width:100%;margin-top:9px}
 .tripRouteStatus{font-size:12px;margin-top:6px}
+
+/* v21.7 live map location */
+.youAreHere{position:absolute;width:18px;height:18px;border-radius:50%;background:#1976d2;border:3px solid white;box-shadow:0 0 0 7px rgba(25,118,210,.18),0 2px 7px rgba(0,0,0,.35);transform:translate(-50%,-50%);z-index:12;pointer-events:none}
+.mapLocateBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.mapLocateStatus{font-size:12px;color:var(--muted)}
+.markerDistance{font-size:12px;font-weight:700;margin-top:4px}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Connected Trip Routes • v21.6</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Live Map + Smarter Trips • v21.7</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -345,7 +351,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.6";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.7";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -381,7 +387,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","21.6");
+    u.searchParams.set("v","21.7");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -548,7 +554,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.6"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.7"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -854,6 +860,34 @@ function projectNH(lat,lon){
     y:462-(lat-minLat)/(maxLat-minLat)*462
   };
 }
+
+let liveMapWatchId=null,liveMapPos=null;
+function startLiveMapLocation(){
+  const status=document.getElementById("mapLocateStatus");
+  if(status)status.textContent="Finding you…";
+  if(!navigator.geolocation){if(status)status.textContent="Location is not available on this device.";return}
+  if(liveMapWatchId!==null)navigator.geolocation.clearWatch(liveMapWatchId);
+  liveMapWatchId=navigator.geolocation.watchPosition(p=>{
+    liveMapPos={lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy};
+    currentPos=liveMapPos;
+    if(status)status.textContent=`Live location • accuracy about ${Math.round(p.coords.accuracy)} m`;
+    renderMap();
+  },e=>{
+    if(status)status.textContent=e.code===1?"Location permission is blocked for this site.":"Couldn’t update your location.";
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+}
+function stopLiveMapLocation(){
+  if(liveMapWatchId!==null){navigator.geolocation.clearWatch(liveMapWatchId);liveMapWatchId=null}
+}
+function centerMapOnMe(){
+  if(!liveMapPos){startLiveMapLocation();return}
+  mapCenter={lat:liveMapPos.lat,lon:liveMapPos.lon};
+  renderMap();
+}
+function milesFromLive(m){
+  if(!liveMapPos||!validGps(m))return null;
+  return haversine(liveMapPos.lat,liveMapPos.lon,m.lat,m.lon);
+}
 function renderMap(){
   const g=document.getElementById("mapPins"); if(!g) return;
   g.innerHTML="";
@@ -1136,6 +1170,17 @@ function renderPassport(){
  });
  applyPassportFilters();
 }
+
+function pruneTripOutliers(group,maxGapMiles=28){
+  if(!group||group.length<4)return group||[];
+  const kept=[group[0]];
+  for(let i=1;i<group.length;i++){
+    const m=group[i];
+    const nearest=Math.min(...kept.map(k=>haversine(k.lat,k.lon,m.lat,m.lon)));
+    if(nearest<=maxGapMiles)kept.push(m);
+  }
+  return kept.length>=3?kept:group;
+}
 function smartTripGroups(){
   const target=Number(document.getElementById("tripSize")?.value||10);
   let left=M.filter(m=>m.status==="installed"&&validGps(m)&&!state.markers[m.num]?.done&&!state.markers[m.num]?.notFound);
@@ -1149,7 +1194,7 @@ function smartTripGroups(){
     }
     groups.push(group);
   }
-  return groups;
+  return groups.map(g=>pruneTripOutliers(g));
 }
 function estimateAdventureSeconds(drivingSeconds,markerCount){
   return drivingSeconds + markerCount*8*60;
@@ -1617,8 +1662,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=21.6",{cache:"no-store"}),
-     fetch("./trips.json?v=21.6",{cache:"no-store"})
+     fetch("./markers.json?v=21.7",{cache:"no-store"}),
+     fetch("./trips.json?v=21.7",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
@@ -1628,6 +1673,8 @@ async function init(){
    // Bind device-location features BEFORE any Supabase/network wait.
    // This keeps Route/Near Me/Adventure usable even when cloud sync is slow.
    document.getElementById("routeUseLocation")?.addEventListener("click",setRouteToCurrentLocation);
+   document.getElementById("mapLiveBtn")?.addEventListener("click",startLiveMapLocation);
+   document.getElementById("mapCenterBtn")?.addEventListener("click",centerMapOnMe);
    document.getElementById("nearBtn")?.addEventListener("click",()=>locate(false));
    document.getElementById("nearAll")?.addEventListener("click",()=>locate(true));
    document.getElementById("advBuild")?.addEventListener("click",buildAdventure);
