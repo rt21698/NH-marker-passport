@@ -172,10 +172,16 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .journeyTools button,.journeyTools .btn{flex:1}
 .routeExplain{background:#fff8e7;border:1px solid #ead49c;border-radius:13px;padding:10px;margin:10px 0;font-size:12px;color:#665024}
 @media(max-width:520px){.routeChoiceStats{grid-template-columns:1fr 1fr}}
+
+/* v21.6 Connected Trip Routes */
+.tripConnected{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:15px;background:#f8faf7}
+.tripConnectedHead{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.tripConnected .btn{width:100%;margin-top:9px}
+.tripRouteStatus{font-size:12px;margin-top:6px}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Location Startup Fix • v21.5</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Connected Trip Routes • v21.6</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
@@ -339,7 +345,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.5";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.6";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -375,7 +381,7 @@ async function ensureCleanRuntime(){
   sessionStorage.setItem(OLD_CACHE_CLEANUP_KEY,"done");
   if(hadController&&changed){
     const u=new URL(location.href);
-    u.searchParams.set("v","21.5");
+    u.searchParams.set("v","21.6");
     u.searchParams.set("fresh",Date.now().toString());
     location.replace(u.toString());
     await new Promise(()=>{});
@@ -542,7 +548,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.5"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.6"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -1174,10 +1180,21 @@ async function queueTripCalculations(cards){
   };
   await Promise.all([worker(),worker()]);
 }
+
+function appleTripMultiStopURL(markers){
+  const good=markers.filter(validGps);
+  if(!good.length)return "#";
+  const params=new URLSearchParams();
+  const destination=good[good.length-1];
+  params.set("destination",`${destination.lat},${destination.lon}`);
+  good.slice(0,-1).forEach(m=>params.append("waypoint",`${m.lat},${m.lon}`));
+  params.set("mode","driving");
+  return `https://maps.apple.com/directions?${params.toString()}`;
+}
 function renderTrips(){
  const host=document.getElementById("tripHost");if(!host)return;host.innerHTML="";
  const groups=smartTripGroups(),remaining=groups.reduce((n,g)=>n+g.length,0);
- const summary=document.getElementById("tripSummary");if(summary)summary.textContent=`${remaining} unvisited active markers reorganized into ${groups.length} day trip${groups.length===1?"":"s"}. Mileage and times calculate automatically.`;
+ const summary=document.getElementById("tripSummary");if(summary)summary.textContent=`${remaining} unvisited active markers reorganized into ${groups.length} day trip${groups.length===1?"":"s"}. Mileage and times calculate automatically. Each day also has one connected Apple Maps route.`;
  const calcQueue=[];
  groups.forEach((active,gi)=>{
    const towns=[...new Set(active.map(m=>m.town))];
@@ -1191,6 +1208,11 @@ function renderTrips(){
      </div>
      <div class="tripCalcNote">Calculating actual road route…</div>
      <div class="btnrow"><button type="button" class="secondary calcRoad">Refresh Route</button></div>
+     <div class="tripConnected">
+       <div class="tripConnectedHead"><strong>🗺️ Connected Maps Route</strong><span class="muted">${active.length} stops</span></div>
+       <div class="tripRouteStatus muted">All markers for this day are connected in the order shown below.</div>
+       <a class="btn openTripRoute" href="${appleTripMultiStopURL(active)}">GO — Open Full Day in Apple Maps</a>
+     </div>
      <div class="routes"></div>`;
    active.forEach((m,i)=>{
      const r=document.createElement("div");r.className="route";
@@ -1595,8 +1617,8 @@ async function init(){
  try{
    await ensureCleanRuntime();
    const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=21.5",{cache:"no-store"}),
-     fetch("./trips.json?v=21.5",{cache:"no-store"})
+     fetch("./markers.json?v=21.6",{cache:"no-store"}),
+     fetch("./trips.json?v=21.6",{cache:"no-store"})
    ]);
    if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
    M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
