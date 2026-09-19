@@ -179,7 +179,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .tripConnected .btn{width:100%;margin-top:9px}
 .tripRouteStatus{font-size:12px;margin-top:6px}
 
-/* v21.9 live map location */
+/* v21.10 live map location */
 .youAreHere{position:absolute;width:18px;height:18px;border-radius:50%;background:#1976d2;border:3px solid white;box-shadow:0 0 0 7px rgba(25,118,210,.18),0 2px 7px rgba(0,0,0,.35);transform:translate(-50%,-50%);z-index:12;pointer-events:none}
 .mapLocateBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .mapLocateStatus{font-size:12px;color:var(--muted)}
@@ -187,7 +187,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Startup Diagnostic • v21.9</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Smart Trips Fix • v21.10</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div id="startupDiag" style="margin-top:9px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.12);font-size:12px;line-height:1.35">
   Diagnostic: page loaded
@@ -354,7 +354,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.9";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.10";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -557,7 +557,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.9"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.10"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -1172,6 +1172,17 @@ function renderPassport(){
  const remote=sharedPhotoUrl(currentTeamId,m.num);if(remote){img.src=remote;img.style.display="block"}else getPhoto(m.num).then(f=>{if(f){img.src=URL.createObjectURL(f);img.style.display="block"}});
  });
  applyPassportFilters();
+}
+
+function haversine(a,b){
+  const R=3958.7613;
+  const lat1=Number(a?.lat), lon1=Number(a?.lon), lat2=Number(b?.lat), lon2=Number(b?.lon);
+  if(![lat1,lon1,lat2,lon2].every(Number.isFinite)) return Infinity;
+  const toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+  const s1=Math.sin(dLat/2), s2=Math.sin(dLon/2);
+  const h=s1*s1+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*s2*s2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
 }
 
 function pruneTripOutliers(group,maxGapMiles=28){
