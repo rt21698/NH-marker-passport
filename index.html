@@ -179,7 +179,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .tripConnected .btn{width:100%;margin-top:9px}
 .tripRouteStatus{font-size:12px;margin-top:6px}
 
-/* v21.11 live map location */
+/* v21.12 live map location */
 .youAreHere{position:absolute;width:18px;height:18px;border-radius:50%;background:#1976d2;border:3px solid white;box-shadow:0 0 0 7px rgba(25,118,210,.18),0 2px 7px rgba(0,0,0,.35);transform:translate(-50%,-50%);z-index:12;pointer-events:none}
 .mapLocateBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .mapLocateStatus{font-size:12px;color:var(--muted)}
@@ -187,7 +187,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Live Location Fix • v21.11</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Field Status Override • v21.12</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div id="startupDiag" style="margin-top:9px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.12);font-size:12px;line-height:1.35">
   Diagnostic: page loaded
@@ -359,7 +359,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.11";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.12";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -416,10 +416,20 @@ function currentTeam(){return teams.find(t=>t.id===currentTeamId)||null}
 function otherTeam(){return teams.find(t=>t.id!==currentTeamId)||null}
 function sharedStatus(teamId,num){
   const r=sharedRow(teamId,num);
-  return r?{done:r.status==="visited",notFound:r.status==="not_found",date:r.visited_date||"",customName:r.custom_name||"",notes:r.notes||"",updated_at:r.updated_at,photo_url:r.photo_url||""}:{done:false,notFound:false,date:"",customName:"",notes:"",updated_at:null,photo_url:""};
+  return r?{done:r.status==="visited",notFound:r.status==="not_found",actualHere:r.status==="confirmed_installed"||(r.status==="visited"&&byNum[Number(num)]?.status!=="installed"),date:r.visited_date||"",customName:r.custom_name||"",notes:r.notes||"",updated_at:r.updated_at,photo_url:r.photo_url||""}:{done:false,notFound:false,actualHere:false,date:"",customName:"",notes:"",updated_at:null,photo_url:""};
 }
 
 
+function markerState(num){return state.markers[num]||{}}
+function actualHereFor(m){
+  const local=!!markerState(m.num).actualHere;
+  const shared=currentTeamId?!!sharedStatus(currentTeamId,m.num).actualHere:false;
+  return m.status==="installed"||local||shared;
+}
+function statusLabel(m){
+  if(m.status!=="installed"&&actualHereFor(m)) return "✓ Confirmed on site — sign is up";
+  return m.status_official||m.status;
+}
 function validGps(m){return Number.isFinite(m.lat)&&Number.isFinite(m.lon)&&m.lat>=42.68&&m.lat<=45.31&&m.lon>=-72.60&&m.lon<=-70.55}
 function applePin(m){return validGps(m)?`https://maps.apple.com/?ll=${m.lat},${m.lon}&q=${encodeURIComponent("NH Historical Marker #"+m.num)}`:`https://maps.apple.com/?address=${encodeURIComponent((m.location||m.name)+", "+m.town+", NH")}`}
 
@@ -488,7 +498,7 @@ async function uploadSharedPhoto(num,file){
 async function removeSharedPhoto(num){
   const x=state.markers[num]||{};x.hasPhoto=false;x.sharedPhotoUrl="";state.markers[num]=x;save();
   if(sb&&currentTeamId){
-    const row=sharedRow(currentTeamId,num),payload={team_id:currentTeamId,marker_num:Number(num),status:x.done?"visited":x.notFound?"not_found":"unvisited",visited_date:x.date||null,custom_name:(x.customName||"").trim()||null,notes:(x.notes||"").trim()||null,photo_url:null,updated_at:new Date().toISOString()};
+    const row=sharedRow(currentTeamId,num),payload={team_id:currentTeamId,marker_num:Number(num),status:x.done?"visited":x.notFound?"not_found":x.actualHere?"confirmed_installed":"unvisited",visited_date:x.date||null,custom_name:(x.customName||"").trim()||null,notes:(x.notes||"").trim()||null,photo_url:null,updated_at:new Date().toISOString()};
     const {error}=await sb.from("marker_progress").upsert(payload,{onConflict:"team_id,marker_num"});if(error)throw error;await refreshShared();
   }
 }
@@ -562,7 +572,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.11"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.12"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -620,6 +630,7 @@ function hydrateCurrentTeamFromShared(){
     const x=state.markers[r.marker_num]||{};
     x.done=r.status==="visited";
     x.notFound=r.status==="not_found";
+    x.actualHere=r.status==="confirmed_installed"||(r.status==="visited"&&byNum[Number(r.marker_num)]?.status!=="installed");
     x.date=r.visited_date||"";if(r.status==="visited"&&r.updated_at&&r.visited_date){const vd=new Date(r.updated_at);if(!isNaN(vd)&&vd.toISOString().slice(0,10)===r.visited_date)x.visitTime=vd.toTimeString().slice(0,5);}
     x.customName=r.custom_name||"";
     x.notes=r.notes||"";
@@ -666,7 +677,7 @@ async function syncMarker(num,photoOverride){
   const payload={
     team_id:currentTeamId,
     marker_num:Number(num),
-    status:s.done?"visited":s.notFound?"not_found":"unvisited",
+    status:s.done?"visited":s.notFound?"not_found":s.actualHere?"confirmed_installed":"unvisited",
     visited_date:s.date||null,
     custom_name:(s.customName||"").trim()||null,
     notes:(s.notes||"").trim()||null,
@@ -681,7 +692,7 @@ async function importLocalProgress(){
   if(!sb||!currentTeamId)return;
   const btn=document.getElementById("importLocalBtn");if(btn){btn.disabled=true;btn.textContent="Importing…"}
   const rows=Object.entries(state.markers).filter(([num,s])=>s.done||s.notFound||s.date||s.customName||s.notes).map(([num,s])=>({
-    team_id:currentTeamId,marker_num:Number(num),status:s.done?"visited":s.notFound?"not_found":"unvisited",
+    team_id:currentTeamId,marker_num:Number(num),status:s.done?"visited":s.notFound?"not_found":s.actualHere?"confirmed_installed":"unvisited",
     visited_date:s.date||null,custom_name:(s.customName||"").trim()||null,notes:(s.notes||"").trim()||null,photo_url:sharedRow(currentTeamId,num)?.photo_url||null,updated_at:new Date().toISOString()
   }));
   if(rows.length){
@@ -979,13 +990,13 @@ async function showMapMarker(m){
     <div class="teamGrid" style="margin:10px 0"><div class="teamCard selected"><b>${mine?.name||"My Team"}</b><span>${my.notFound?"✕ Checked — not found":my.done?"✓ Visited":"○ Not visited"}</span></div><div class="teamCard"><b>${other?.name||"Other Team"}</b><span>${them.notFound?"✕ Checked — not found":them.done?"✓ Visited":"○ Not visited"}</span></div></div>
     <p><strong>Official location:</strong> ${m.location||"Not listed"}</p>
     <div class="chips">
-      <span class="chip">${m.status_official||m.status}</span>
+      <span class="chip">${statusLabel(m)}</span>${m.status!=="installed"&&actualHereFor(m)?'<span class="chip">📍 Community confirmed — sign is up</span>':""}
       <span class="chip">${s.notFound?"✕ Site checked — marker not found":s.done?"✓ Visited":"○ Not visited yet"}</span>
       ${s.date?`<span class="chip">📅 ${s.date}</span>`:""}
       ${s.favorite?`<span class="chip">⭐ Favorite</span>`:""}
     </div>
     <div id="mapPhotoHolder">${s.done?'<div class="mapNoPhoto">Checking for your saved selfie…</div>':s.notFound?'<div class="mapNoPhoto">You checked this location, but the marker was not there.</div>':'<div class="mapNoPhoto">No selfie yet — this marker is still on your list.</div>'}</div>
-    <div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="secondary" onclick="openPassportMarker(${m.num})">Open Passport</button>${m.status==="installed"?`<button type="button" class="outline" onclick="toggleNotFound(${m.num})">${s.notFound?"Clear Not Found":"Marker Not Found"}</button>`:""}</div>`;
+    <div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="secondary" onclick="openPassportMarker(${m.num})">Open Passport</button>${actualHereFor(m)?`<button type="button" class="outline" onclick="toggleNotFound(${m.num})">${s.notFound?"Clear Not Found":"Marker Not Found"}</button>`:""}${m.status!=="installed"?`<button type="button" class="secondary" onclick="toggleActualHere(${m.num})">${actualHereFor(m)?"Restore Official Status":"📍 Sign Is Actually Here"}</button>`:""}</div>`;
   if(s.done||sharedPhotoUrl(currentTeamId,m.num)||sharedPhotoUrl(otherTeam()?.id,m.num)){
     const holder=document.getElementById("mapPhotoHolder"),mine=currentTeam(),other=otherTeam();
     const photos=[[mine,sharedPhotoUrl(mine?.id,m.num)],[other,sharedPhotoUrl(other?.id,m.num)]].filter(x=>x[0]&&x[1]);
@@ -995,6 +1006,14 @@ async function showMapMarker(m){
       catch(e){holder.innerHTML='<div class="mapNoPhoto">Visited — selfie could not be loaded.</div>'}
     }
   }
+}
+async function toggleActualHere(num){
+  const m=byNum[num],s=state.markers[num]||{},currently=actualHereFor(m);
+  if(currently){
+    if(s.done&&!confirm("This marker is marked visited. Restoring the official unavailable status will also clear the visited checkmark. Continue?"))return;
+    s.actualHere=false;if(s.done)s.done=false;
+  }else{s.actualHere=true;s.notFound=false}
+  state.markers[num]=s;save();await syncMarker(num);renderPassport();renderMap();renderTrips();renderHomeDashboard();showMapMarker(m);
 }
 async function toggleNotFound(num){
   const s=state.markers[num]||{};
@@ -1186,18 +1205,19 @@ function renderPassport(){
  const host=document.getElementById("markerHost");
  const openMarkers=new Set([...host.querySelectorAll("details.marker[open]")].map(x=>Number(x.dataset.num)));
  host.innerHTML="";
- M.forEach(m=>{const s=passportTeamState(m.num),d=document.createElement("details");d.className="marker "+(s.done?"done ":"")+(s.notFound?"notfound ":"")+(m.status!=="installed"?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();d.dataset.num=m.num;
- d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${m.status!=="installed"?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${m.status!=="installed"?"bad":""}">${m.status_official||m.status}</span>${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
- <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p><div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${m.status==="installed"?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}</div>
+ M.forEach(m=>{const s=passportTeamState(m.num),d=document.createElement("details"),effectiveInstalled=actualHereFor(m);d.className="marker "+(s.done?"done ":"")+(s.notFound?"notfound ":"")+(!effectiveInstalled?"unavailable":"");d.dataset.search=`${m.num} ${m.name} ${m.town}`.toLowerCase();d.dataset.num=m.num;
+ d.innerHTML=`<summary class="mh"><input class="done" type="checkbox" ${s.done?"checked":""} ${!effectiveInstalled?"disabled":""}><div class="mt"><b>#${m.num} — ${displayName(m)}</b>${officialNameNote(m)}<small>${m.town}, NH</small><span class="status ${!effectiveInstalled?"bad":""}">${statusLabel(m)}</span>${m.status!=="installed"&&effectiveInstalled?'<span class="notFoundBadge">📍 Community confirmed — sign is up</span>':""}${s.notFound?'<span class="notFoundBadge">✕ Site checked — marker not found</span>':""}</div><span>${s.favorite?"⭐":"›"}</span></summary>
+ <div class="mb"><p class="muted"><strong>Official location:</strong> ${m.location||"Not listed"}</p>${m.status!=="installed"?`<p class="muted"><strong>Official DHR status:</strong> ${m.status_official||m.status}</p>`:""}<div class="btnrow"><a class="btn" href="${applePin(m)}">Open Exact Pin</a><button type="button" class="outline fav">${s.favorite?"★ Favorite":"☆ Favorite"}</button>${effectiveInstalled?`<button type="button" class="secondary notfoundBtn">${s.notFound?"Clear Not Found":"Visited Site — Marker Not Found"}</button>`:""}${m.status!=="installed"?`<button type="button" class="secondary actualHereBtn">${effectiveInstalled?"↩ Restore Official Status":"📍 Sign Is Actually Here"}</button>`:""}</div>
  <label>Custom marker name</label><input class="customName" type="text" placeholder="Optional — your own name for this marker" value="${(s.customName||"").replace(/"/g,"&quot;")}"><div class="muted" style="margin-top:5px">Leave blank to use the official DHR title.</div>
  <label>Date visited</label><input class="date" type="date" value="${s.date||""}"><label>Time visited</label><input class="visitTime" type="hidden" value="${s.visitTime||""}"><button type="button" class="visitTimeBtn secondary"><span>${s.visitTime?formatVisitTime12(s.visitTime):"Set visit time"}</span><span>›</span></button><div class="muted" style="margin-top:5px">Enter the real time you were at the marker. This is what Recent Activity uses—not the upload time.</div>
  <label>Selfie</label><div class="btnrow"><label class="photoPicker" for="photo-${m.num}">Choose from Photos</label><button type="button" class="secondary remove">Remove</button></div><input id="photo-${m.num}" class="file" type="file" accept="image/*" style="position:absolute;left:-10000px;width:1px;height:1px"><img class="photo">
  <label>Notes</label><textarea class="notes">${s.notes||""}</textarea></div>`;
  host.appendChild(d);
  if(openMarkers.has(Number(m.num))) d.open=true;
- const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),visitTimeBtn=d.querySelector(".visitTimeBtn"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),customName=d.querySelector(".customName");
+ const done=d.querySelector(".done"),date=d.querySelector(".date"),visitTime=d.querySelector(".visitTime"),visitTimeBtn=d.querySelector(".visitTimeBtn"),notes=d.querySelector(".notes"),fav=d.querySelector(".fav"),file=d.querySelector(".file"),img=d.querySelector(".photo"),notfoundBtn=d.querySelector(".notfoundBtn"),actualHereBtn=d.querySelector(".actualHereBtn"),customName=d.querySelector(".customName");
  done.addEventListener("click",e=>e.stopPropagation());done.addEventListener("change",async()=>{const x=state.markers[m.num]||{};x.done=done.checked;if(done.checked){x.notFound=false;const now=new Date();if(!x.date)x.date=now.toISOString().slice(0,10);if(!x.visitTime)x.visitTime=now.toTimeString().slice(0,5)}state.markers[m.num]=x;d.classList.toggle("done",done.checked);d.classList.toggle("notfound",!!x.notFound);save();renderMap();renderTrips();renderHomeDashboard();if(done.checked)maybeAdvanceActiveJourney(m.num);await syncMarker(m.num)});
  if(notfoundBtn)notfoundBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{};x.notFound=!x.notFound;if(x.notFound)x.done=false;state.markers[m.num]=x;save();renderPassport();renderMap();await syncMarker(m.num)});
+ if(actualHereBtn)actualHereBtn.addEventListener("click",async()=>{const x=state.markers[m.num]||{},isHere=actualHereFor(m);if(isHere){if(x.done&&!confirm("This marker is marked visited. Restoring the official unavailable status will also clear the visited checkmark. Continue?"))return;x.actualHere=false;if(x.done)x.done=false}else{x.actualHere=true;x.notFound=false}state.markers[m.num]=x;save();await syncMarker(m.num);renderPassport();renderMap();renderTrips();renderHomeDashboard()});
  customName.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),customName:customName.value.trim()};save();renderTrips();renderMap();await syncMarker(m.num)});
  date.addEventListener("change",async()=>{state.markers[m.num]={...(state.markers[m.num]||{}),date:date.value};save();renderActivity();renderHomeDashboard();await syncMarker(m.num)});
  visitTimeBtn.addEventListener("click",()=>openCustomTimePicker(m.num,visitTime,visitTimeBtn));
