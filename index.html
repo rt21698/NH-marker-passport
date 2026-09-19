@@ -179,7 +179,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .tripConnected .btn{width:100%;margin-top:9px}
 .tripRouteStatus{font-size:12px;margin-top:6px}
 
-/* v21.10 live map location */
+/* v21.11 live map location */
 .youAreHere{position:absolute;width:18px;height:18px;border-radius:50%;background:#1976d2;border:3px solid white;box-shadow:0 0 0 7px rgba(25,118,210,.18),0 2px 7px rgba(0,0,0,.35);transform:translate(-50%,-50%);z-index:12;pointer-events:none}
 .mapLocateBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .mapLocateStatus{font-size:12px;color:var(--muted)}
@@ -187,7 +187,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Smart Trips Fix • v21.10</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Live Location Fix • v21.11</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
 <div id="startupDiag" style="margin-top:9px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.12);font-size:12px;line-height:1.35">
   Diagnostic: page loaded
@@ -291,6 +291,11 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
       <button id="zoomOut" type="button" class="secondary">− Zoom Out</button>
       <button id="zoomReset" type="button" class="outline">Reset Map</button>
     </div>
+    <div class="btnrow" style="margin-top:10px">
+      <button id="mapLiveBtn" type="button">📍 Show My Live Location</button>
+      <button id="mapCenterBtn" type="button" class="secondary">🎯 Center on Me</button>
+    </div>
+    <p id="mapLocateStatus" class="muted" style="margin:8px 0 0">Live location is off.</p>
     <p class="muted" style="margin:10px 0 0">You can also pinch to zoom and drag the map with one finger.</p>
   </div>
   <div class="card" style="padding:8px;overflow:hidden">
@@ -354,7 +359,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.10";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.11";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -557,7 +562,7 @@ async function initSupabase(force=false){
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{headers:{"x-client-info":"nh-marker-passport-v21.10"}},
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.11"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
@@ -884,8 +889,11 @@ function stopLiveMapLocation(){
 }
 function centerMapOnMe(){
   if(!liveMapPos){startLiveMapLocation();return}
-  mapCenter={lat:liveMapPos.lat,lon:liveMapPos.lon};
-  renderMap();
+  const p=projectNH(liveMapPos.lat,liveMapPos.lon);
+  const targetW=Math.min(mapView.w,150), targetH=targetW*(462/360);
+  mapView.w=targetW; mapView.h=targetH;
+  mapView.x=p.x-targetW/2; mapView.y=p.y-targetH/2;
+  clampMapView(); applyMapView(); renderMap();
 }
 function milesFromLive(m){
   if(!liveMapPos||!validGps(m))return null;
@@ -932,6 +940,34 @@ function renderMap(){
     const hit=document.createElementNS("http://www.w3.org/2000/svg","circle");hit.setAttribute("cx",p.x);hit.setAttribute("cy",p.y);hit.setAttribute("r",8);hit.setAttribute("class","mapHit");hit.setAttribute("aria-label",`Marker ${m.num}: ${displayName(m)}`);hit.addEventListener("click",()=>showMapMarker(m));group.appendChild(hit);
     g.appendChild(group);
   });
+
+  // Live "You Are Here" marker.
+  if(liveMapPos && Number.isFinite(liveMapPos.lat) && Number.isFinite(liveMapPos.lon)){
+    const p=projectNH(liveMapPos.lat,liveMapPos.lon);
+    const live=document.createElementNS("http://www.w3.org/2000/svg","g");
+    live.setAttribute("id","liveLocationMarker");
+    live.setAttribute("pointer-events","none");
+
+    const halo=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    halo.setAttribute("cx",p.x); halo.setAttribute("cy",p.y); halo.setAttribute("r","8");
+    halo.setAttribute("fill","rgba(37,99,235,.18)");
+    halo.setAttribute("stroke","#2563eb"); halo.setAttribute("stroke-width","1.4");
+    live.appendChild(halo);
+
+    const dot=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    dot.setAttribute("cx",p.x); dot.setAttribute("cy",p.y); dot.setAttribute("r","4.2");
+    dot.setAttribute("fill","#2563eb"); dot.setAttribute("stroke","white"); dot.setAttribute("stroke-width","1.6");
+    live.appendChild(dot);
+
+    const label=document.createElementNS("http://www.w3.org/2000/svg","text");
+    label.setAttribute("x",p.x+7); label.setAttribute("y",p.y-7);
+    label.setAttribute("font-size","7"); label.setAttribute("font-weight","800");
+    label.setAttribute("fill","#174ea6"); label.setAttribute("paint-order","stroke");
+    label.setAttribute("stroke","white"); label.setAttribute("stroke-width","2");
+    label.textContent="YOU ARE HERE";
+    live.appendChild(label);
+    g.appendChild(live);
+  }
 }
 async function showMapMarker(m){
   document.querySelectorAll(".pinVisited,.pinUnvisited,.pinNotFound,.pinUnavailable").forEach(p=>p.classList.remove("mapSelected"));
