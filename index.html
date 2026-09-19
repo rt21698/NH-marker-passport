@@ -179,7 +179,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 .tripConnected .btn{width:100%;margin-top:9px}
 .tripRouteStatus{font-size:12px;margin-top:6px}
 
-/* v21.8 live map location */
+/* v21.9 live map location */
 .youAreHere{position:absolute;width:18px;height:18px;border-radius:50%;background:#1976d2;border:3px solid white;box-shadow:0 0 0 7px rgba(25,118,210,.18),0 2px 7px rgba(0,0,0,.35);transform:translate(-50%,-50%);z-index:12;pointer-events:none}
 .mapLocateBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .mapLocateStatus{font-size:12px;color:var(--muted)}
@@ -187,8 +187,11 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Live Map + Smarter Trips • v21.8</small></div><div style="font-size:27px">🌲</div></div>
+<header><div class="wrap"><div class="brand"><div><h1>NH Historical Marker Passport</h1><small>Startup Diagnostic • v21.9</small></div><div style="font-size:27px">🌲</div></div>
 <div class="chips" style="margin-top:10px"><span id="syncChip" class="chip syncWaiting">● Connecting…</span><span id="teamChip" class="chip">Choose team</span><button id="reconnectBtn" type="button" class="chip" style="display:none;border:0">Reconnect</button></div>
+<div id="startupDiag" style="margin-top:9px;padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.12);font-size:12px;line-height:1.35">
+  Diagnostic: page loaded
+</div>
 <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><b id="doneN">0</b><span>visited</span></div><div class="stat"><b id="availN">0</b><span>active</span></div><div class="stat"><b id="notFoundN">0</b><span>not found</span></div><div class="stat"><b id="photoN">0</b><span>selfies</span></div></div><div class="track"><div id="bar" class="bar"></div></div></div></header>
 <nav style="grid-template-columns:repeat(8,1fr)">
 <button class="tab active" data-view="home">Home</button><button class="tab" data-view="routehunt">Route</button><button class="tab" data-view="map">Map</button><button class="tab" data-view="nearby">Near Me</button><button class="tab" data-view="trips">Trips</button><button class="tab" data-view="adventure">Adventure</button><button class="tab" data-view="passport">Passport</button><button class="tab" data-view="race">Race</button>
@@ -351,7 +354,7 @@ input[type=time],input[type=text]{width:100%;font:inherit;border:1px solid var(-
 <script>
 
 "use strict";
-const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.8";
+const OLD_CACHE_CLEANUP_KEY="nh-old-cache-cleaned-v21.9";
 
 async function removeOldAppWorkersAndCaches(){
   let changed=false;
@@ -549,43 +552,16 @@ async function reconnectShared(){
   }
 }
 
-function fetchWithTimeout(resource, options={}){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),12000);
-  const existingSignal=options.signal;
-  if(existingSignal){
-    if(existingSignal.aborted)controller.abort();
-    else existingSignal.addEventListener("abort",()=>controller.abort(),{once:true});
-  }
-  return fetch(resource,{...options,signal:controller.signal})
-    .catch(err=>{
-      if(err?.name==="AbortError")throw new Error("Connection timed out after 12 seconds. Supabase did not answer this phone.");
-      throw err;
-    })
-    .finally(()=>clearTimeout(timer));
-}
-
 async function initSupabase(force=false){
-  if(!window.supabase?.createClient){
-    const e=new Error("The Supabase library did not load from its CDN.");
-    explainConnectionError(e);setSyncState("error","Supabase library failed");throw e;
-  }
+  if(!window.supabase?.createClient){setSyncState("error","Local mode");return false}
   if(force&&realtimeChannel&&sb){try{await sb.removeChannel(realtimeChannel)}catch(e){}}
   realtimeChannel=null;
-  setSyncState("waiting","Contacting Supabase…");
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
-    global:{
-      headers:{"x-client-info":"nh-marker-passport-v21.8"},
-      fetch:fetchWithTimeout
-    },
+    global:{headers:{"x-client-info":"nh-marker-passport-v21.9"}},
     auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
   });
-  setSyncState("waiting","Loading teams…");
   const {data:t,error:te}=await sb.from("teams").select("id,name").order("created_at");
-  if(te){
-    const wrapped=new Error(`Teams request failed: ${te.message||"Unknown Supabase error"}`);
-    explainConnectionError(wrapped);throw wrapped;
-  }
+  if(te){explainConnectionError(te);throw te;}
   teams=t||[];if(!teams.length)throw new Error("Connected to Supabase, but no teams were returned.");
   populateTeamControls();
   if(!currentTeamId||!teams.some(t=>t.id===currentTeamId)){
@@ -626,9 +602,8 @@ async function chooseTeam(id){
 async function refreshShared(){
   if(!sb)return;
   const scrollY=window.scrollY;
-  setSyncState("waiting","Loading marker progress…");
   const {data,error}=await sb.from("marker_progress").select("*");
-  if(error)throw new Error(`Marker progress request failed: ${error.message||"Unknown Supabase error"}`);
+  if(error)throw error;
   sharedRows=data||[];
   if(currentTeamId)hydrateCurrentTeamFromShared();
   renderAllShared();
@@ -1686,20 +1661,74 @@ async function renderLatestMemory(){
   else try{const f=await getPhoto(m.num);if(f)ph.innerHTML=`<img src="${URL.createObjectURL(f)}" alt="Latest marker selfie">`}catch(e){}
 }
 
-async function init(){
- try{
-   await ensureCleanRuntime();
-   const [mr,tr]=await Promise.all([
-     fetch("./markers.json?v=21.7",{cache:"no-store"}),
-     fetch("./trips.json?v=21.7",{cache:"no-store"})
-   ]);
-   if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
-   M=await mr.json();T=await tr.json();byNum=Object.fromEntries(M.map(m=>[m.num,m]));
-   renderPassport();renderTrips();renderMap();setupMapGestures();renderSavedJourney();
-   try{updateStats();renderHomeDashboard()}catch(e){console.error("Local dashboard render",e)}
+function startupStep(message){
+  const el=document.getElementById("startupDiag");
+  if(el)el.textContent="Diagnostic: "+message;
+  console.log("[NH Passport startup]",message);
+}
+function startupFail(step,err){
+  const msg=(err&&err.message)?err.message:String(err||"Unknown error");
+  startupStep("STOPPED at "+step+" — "+msg);
+  const detail=document.getElementById("connectionDetail");
+  if(detail)detail.textContent=step+": "+msg;
+  setSyncState("error","Startup stopped");
+}
+async function withStartupTimeout(label,promise,ms=12000){
+  let timer;
+  const timeout=new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(new Error(label+" timed out after "+Math.round(ms/1000)+" seconds")),ms);
+  });
+  try{return await Promise.race([promise,timeout])}
+  finally{clearTimeout(timer)}
+}
 
-   // Bind device-location features BEFORE any Supabase/network wait.
-   // This keeps Route/Near Me/Adventure usable even when cloud sync is slow.
+async function init(){
+ let stage="starting app";
+ try{
+   startupStep("Starting app…");
+
+   stage="runtime cleanup";
+   startupStep("Checking old app cache…");
+   await withStartupTimeout("Cache cleanup",ensureCleanRuntime(),8000);
+
+   stage="loading marker files";
+   startupStep("Loading markers.json + trips.json…");
+   const [mr,tr]=await withStartupTimeout("Marker/trip file download",Promise.all([
+     fetch("./markers.json?v=21.9",{cache:"no-store"}),
+     fetch("./trips.json?v=21.9",{cache:"no-store"})
+   ]),12000);
+   if(!mr.ok||!tr.ok)throw new Error(`Data load failed: markers ${mr.status}, trips ${tr.status}`);
+
+   stage="parsing markers";
+   startupStep("Parsing marker files…");
+   M=await withStartupTimeout("markers.json parsing",mr.json(),8000);
+   T=await withStartupTimeout("trips.json parsing",tr.json(),8000);
+   byNum=Object.fromEntries(M.map(m=>[m.num,m]));
+   startupStep(`Parsed ${M.length} markers and ${T.length} trip groups ✓`);
+
+   stage="rendering passport";
+   startupStep("Rendering Passport…");
+   renderPassport();
+
+   stage="rendering trips";
+   startupStep("Rendering Trips…");
+   renderTrips();
+
+   stage="rendering map";
+   startupStep("Rendering Map…");
+   renderMap();
+
+   stage="setting up map";
+   startupStep("Setting up map controls…");
+   setupMapGestures();
+   renderSavedJourney();
+
+   stage="rendering dashboard";
+   startupStep("Rendering dashboard…");
+   try{updateStats();renderHomeDashboard()}catch(e){console.error("Local dashboard render",e);throw e}
+
+   stage="binding location controls";
+   startupStep("Binding location controls…");
    document.getElementById("routeUseLocation")?.addEventListener("click",setRouteToCurrentLocation);
    document.getElementById("mapLiveBtn")?.addEventListener("click",startLiveMapLocation);
    document.getElementById("mapCenterBtn")?.addEventListener("click",centerMapOnMe);
@@ -1707,9 +1736,21 @@ async function init(){
    document.getElementById("nearAll")?.addEventListener("click",()=>locate(true));
    document.getElementById("advBuild")?.addEventListener("click",buildAdventure);
 
-   try{await initSupabase()}catch(e){console.error("Supabase init",e);explainConnectionError(e);setSyncState("error","Shared sync offline")}
+   stage="starting Supabase";
+   startupStep("Starting Supabase…");
+   try{
+     await withStartupTimeout("Supabase startup",initSupabase(),15000);
+     startupStep("Supabase connected ✓");
+   }catch(e){
+     console.error("Supabase init",e);
+     explainConnectionError(e);
+     setSyncState("error","Shared sync offline");
+     startupStep("Supabase failed — "+(e?.message||e));
+   }
    maybeOfferImport();
 
+   stage="binding app controls";
+   startupStep("Binding app controls…");
    document.getElementById("search").addEventListener("input",applyPassportFilters);
    document.getElementById("passportFilter")?.addEventListener("change",applyPassportFilters);
    document.getElementById("mapTeamView")?.addEventListener("change",renderMap);
@@ -1724,9 +1765,13 @@ async function init(){
    document.getElementById("tripSize")?.addEventListener("change",renderTrips);
    document.getElementById("routeBuild")?.addEventListener("click",buildRouteHunt);
    document.getElementById("routeStart")?.addEventListener("input",e=>{if(e.target.value!=="Current location")delete e.target.dataset.coords});
-}catch(err){
+
+   startupStep("App startup complete ✓");
+ }catch(err){
    console.error(err);
-   document.getElementById("nextText").textContent="App data failed to load. Make sure markers.json and trips.json were uploaded with index.html, then refresh Safari.";
+   startupFail(stage,err);
+   const next=document.getElementById("nextText");
+   if(next)next.textContent="Startup stopped at "+stage+". The diagnostic message at the top shows the exact step.";
  }
 }
 init();
